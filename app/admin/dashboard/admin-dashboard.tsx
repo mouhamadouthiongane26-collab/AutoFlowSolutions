@@ -1,4 +1,4 @@
-import { FileText, Image, LogOut, Plus, Tags, Type } from "lucide-react";
+import { FileText, LogOut, Tags, Type } from "lucide-react";
 import {
   deleteArticle,
   deleteMedia,
@@ -6,7 +6,6 @@ import {
   deleteOffer,
   deleteText,
   signOut,
-  uploadMedia,
   upsertArticle,
   upsertMessage,
   upsertOffer,
@@ -16,6 +15,7 @@ import { articlePath } from "@/lib/data";
 import type { Article, ContactMessage, MediaItem, Offer, TextItem, UserRole } from "@/lib/defaults";
 import { DashboardTabs } from "./dashboard-tabs";
 import { DeleteButton } from "./delete-button";
+import { MediaUploadForm } from "./media-upload-form";
 
 type Props = {
   texts: TextItem[];
@@ -218,12 +218,7 @@ function ArticleForm({ article }: { article?: Article }) {
 function MediaPanel({ media }: { media: MediaItem[] }) {
   return (
     <div className="grid gap-5">
-      <form action={uploadMedia} className="admin-panel grid gap-4">
-        <h2 className="flex items-center gap-2 text-lg font-bold"><Plus size={18} /> Ajouter un media</h2>
-        <input className="field" name="file" type="file" accept="image/*,video/mp4,video/webm,video/quicktime" required />
-        <p className="text-sm text-slatecopy">Images et videos jusqu'a 50 Mo.</p>
-        <button className="button w-fit" type="submit"><Image size={18} /> Uploader</button>
-      </form>
+      <MediaUploadForm />
       <div className="grid gap-4 md:grid-cols-2">
         {media.map((item) => (
           <div key={item.id} className="admin-panel">

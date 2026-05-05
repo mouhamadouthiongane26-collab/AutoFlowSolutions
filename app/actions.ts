@@ -8,6 +8,7 @@ import type { UserRole } from "@/lib/defaults";
 const publicPaths = ["/", "/services", "/offres", "/automatisation", "/contact"];
 const maxActionUploadSize = 50 * 1024 * 1024;
 const contentRoles: UserRole[] = ["admin"];
+type ActionResult = { ok: boolean; message: string };
 
 function value(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -224,6 +225,31 @@ export async function uploadMedia(formData: FormData) {
   if (insertError) failFromError(insertError, "public.media", "media");
   revalidatePublicSite();
   dashboardMessage("success", "Media ajoute.", "media");
+}
+
+export async function registerUploadedMedia(formData: FormData): Promise<ActionResult> {
+  const supabase = await requireContentRole();
+  const url = value(formData, "url");
+  const type = value(formData, "type");
+
+  if (!url || !["image", "video"].includes(type)) {
+    return { ok: false, message: "Media invalide." };
+  }
+
+  const { error } = await supabase.from("media").insert({
+    type,
+    url
+  });
+
+  if (error) {
+    return {
+      ok: false,
+      message: isMissingSchemaTable(error) ? tableSetupError("public.media") : error.message
+    };
+  }
+
+  revalidatePublicSite();
+  return { ok: true, message: "Media ajoute." };
 }
 
 export async function deleteMedia(formData: FormData) {
