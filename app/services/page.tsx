@@ -1,6 +1,7 @@
 import { Bot, FileText, Globe, Workflow } from "lucide-react";
 import { PublicShell } from "@/components/public-shell";
-import { getTextMap, jsonTextValue, textValue } from "@/lib/data";
+import { getTextMap, textValue } from "@/lib/data";
+import { defaultTextValues } from "@/lib/defaults";
 import { CreationSiteCard } from "./creation-site-card";
 
 type ServiceItem = {
@@ -8,9 +9,38 @@ type ServiceItem = {
   texte: string;
 };
 
+function parseServiceItems(raw?: string) {
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const items = JSON.parse(raw);
+
+    if (!Array.isArray(items)) {
+      return [];
+    }
+
+    return items.flatMap((item): ServiceItem[] => {
+      if (!item || typeof item !== "object") {
+        return [];
+      }
+
+      const titre = typeof item.titre === "string" ? item.titre.trim() : "";
+      const texte = typeof item.texte === "string" ? item.texte.trim() : "";
+
+      return titre && texte ? [{ titre, texte }] : [];
+    });
+  } catch {
+    return [];
+  }
+}
+
 export default async function ServicesPage() {
   const texts = await getTextMap();
-  const services = jsonTextValue<ServiceItem[]>(texts, "services.items", []);
+  const cmsServices = parseServiceItems(texts["services.items"]);
+  const fallbackServices = parseServiceItems(defaultTextValues["services.items"]);
+  const services = cmsServices.length > 0 ? cmsServices : fallbackServices;
   const icons = [Globe, Bot, FileText, Workflow];
 
   return (
