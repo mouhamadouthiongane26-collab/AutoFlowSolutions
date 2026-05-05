@@ -21,7 +21,7 @@ export default async function DashboardPage({
   if (!user) redirect("/admin/login")
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle()
-  const role = profile?.role as UserRole | undefined
+  const role = (profile?.role ?? user.app_metadata?.role) as UserRole | undefined
 
   if (role !== "admin") {
     return <AccessDenied userEmail={user.email} role={role} />

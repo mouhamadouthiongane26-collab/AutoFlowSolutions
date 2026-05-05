@@ -30,11 +30,13 @@ async function getCurrentRole() {
   if (!user) redirect("/admin/login");
 
   const { data, error } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-  if (error || !data?.role) {
-    redirect(`/admin/dashboard?error=${encodeURIComponent("Role introuvable. Executez supabase/schema.sql puis reconnectez-vous.")}`);
+  const role = (data?.role ?? user.app_metadata?.role) as UserRole | undefined;
+
+  if (!role) {
+    redirect(`/admin/dashboard?error=${encodeURIComponent("Role introuvable. Executez supabase/schema.sql ou configurez le role admin dans Supabase Auth.")}`);
   }
 
-  return { supabase, role: data.role as UserRole };
+  return { supabase, role };
 }
 
 async function requireContentRole() {

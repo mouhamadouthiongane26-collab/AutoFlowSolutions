@@ -24,7 +24,7 @@ export async function getUserRole(): Promise<UserRole | null> {
   if (!user) return null;
 
   const { data } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-  return data?.role ?? null;
+  return data?.role ?? user.app_metadata?.role ?? null;
 }
 
 export async function getTexts(): Promise<TextItem[]> {
