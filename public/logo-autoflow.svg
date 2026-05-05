@@ -1,0 +1,32 @@
+<svg width="900" height="320" viewBox="0 0 900 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AutoFlowSolutions">
+  <defs>
+    <linearGradient id="blueFlow" x1="204" y1="60" x2="670" y2="241" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#14C8F5"/>
+      <stop offset="0.48" stop-color="#0868D8"/>
+      <stop offset="1" stop-color="#00123D"/>
+    </linearGradient>
+    <linearGradient id="arrowFlow" x1="176" y1="200" x2="760" y2="117" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00123D"/>
+      <stop offset="0.58" stop-color="#096AD8"/>
+      <stop offset="1" stop-color="#14C8F5"/>
+    </linearGradient>
+  </defs>
+
+  <g>
+    <path d="M308 180L407 35C426 8 468 12 482 43L573 245L512 260L450 101L330 258H258L308 180Z" fill="url(#blueFlow)"/>
+    <path d="M380 185L454 168C466 165 471 173 461 179L344 248L380 185Z" fill="#0868D8"/>
+    <path d="M589 61H746C753 61 757 69 753 75L718 121C710 132 698 138 684 138H604C592 138 582 148 582 160V184H691C697 184 701 191 697 196L675 227C668 237 657 243 645 243H535L515 184L589 61Z" fill="#00123D"/>
+    <path d="M176 224C245 291 584 283 716 142" stroke="url(#arrowFlow)" stroke-width="33" stroke-linecap="round"/>
+    <path d="M715 142L782 101C790 96 800 102 799 111L790 189C789 199 777 203 770 196L715 142Z" fill="#14C8F5"/>
+    <circle cx="226" cy="159" r="13" fill="#0868D8"/>
+    <path d="M239 159H306" stroke="#14C8F5" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="188" cy="194" r="13" fill="#063AA0"/>
+    <path d="M201 194H283" stroke="#0868D8" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="139" cy="232" r="13" fill="#001B63"/>
+    <path d="M152 232H260" stroke="#00123D" stroke-width="9" stroke-linecap="round"/>
+  </g>
+
+  <text x="76" y="285" fill="#00123D" font-family="Arial, Helvetica, sans-serif" font-size="56" font-weight="800" letter-spacing="10">AUTO</text>
+  <text x="378" y="285" fill="#0868D8" font-family="Arial, Helvetica, sans-serif" font-size="56" font-weight="800" letter-spacing="8">FLOW</text>
+  <text x="227" y="316" fill="#00123D" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="600" letter-spacing="18">SOLUTIONS</text>
+</svg>

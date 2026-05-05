@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  background: #0b0f1a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(37, 99, 235, 0.25), transparent 30rem),
+    radial-gradient(circle at 84% 14%, rgba(124, 58, 237, 0.26), transparent 28rem),
+    radial-gradient(circle at 50% 88%, rgba(6, 182, 212, 0.16), transparent 30rem),
+    #0b0f1a;
+  color: #ffffff;
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.field {
+  @apply w-full rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition duration-300 placeholder:text-slatecopy/45 focus:border-pulse/70 focus:bg-white/[0.07] focus:ring-4 focus:ring-pulse/15;
+}
+
+.label {
+  @apply text-sm font-semibold text-white;
+}
+
+.button {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-brand to-violet px-5 py-3 text-sm font-semibold text-white shadow-glow transition duration-300 hover:-translate-y-0.5 hover:shadow-soft;
+}
+
+.button-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:border-pulse/60 hover:bg-white/[0.08] hover:text-pulse;
+}
+
+.section {
+  @apply mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8;
+}
+
+.admin-panel {
+  @apply rounded-lg border border-white/10 bg-white/[0.04] p-5 shadow-soft;
+}
+
+.glass-card {
+  @apply rounded-lg border border-white/10 bg-white/[0.055] shadow-soft backdrop-blur-xl;
+}
+
+.eyebrow {
+  @apply inline-flex items-center gap-2 rounded-full border border-pulse/25 bg-pulse/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.24em] text-pulse;
+}
+
+.gradient-text {
+  @apply bg-gradient-to-r from-white via-slatecopy to-pulse bg-clip-text text-transparent;
+}
+
+.mesh-bg {
+  position: relative;
+  isolation: isolate;
+}
+
+.mesh-bg::before {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  content: "";
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, black, transparent 78%);
+}
+
+.mesh-bg::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background:
+    radial-gradient(circle at 18% 22%, rgba(37, 99, 235, 0.28), transparent 22rem),
+    radial-gradient(circle at 80% 18%, rgba(124, 58, 237, 0.24), transparent 24rem),
+    radial-gradient(circle at 70% 72%, rgba(6, 182, 212, 0.12), transparent 22rem);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
