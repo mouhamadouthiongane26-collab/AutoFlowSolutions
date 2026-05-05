@@ -42,7 +42,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isAuthPage && user) {
+  if (isAuthPage && user && !request.nextUrl.searchParams.has("error")) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/admin/dashboard";
     return NextResponse.redirect(redirectUrl);
