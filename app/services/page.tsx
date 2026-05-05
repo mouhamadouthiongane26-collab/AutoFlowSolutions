@@ -1,6 +1,7 @@
 import { Bot, FileText, Globe, Workflow } from "lucide-react";
 import { PublicShell } from "@/components/public-shell";
 import { getTextMap, jsonTextValue, textValue } from "@/lib/data";
+import { CreationSiteCard } from "./creation-site-card";
 
 type ServiceItem = {
   titre: string;
@@ -23,6 +24,16 @@ export default async function ServicesPage() {
         <div className="mt-12 grid gap-5 md:grid-cols-2">
           {services.map((service, index) => {
             const Icon = icons[index % icons.length];
+            const isCreationSite = service.titre
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "")
+              .toLowerCase()
+              .includes("creation de site");
+
+            if (isCreationSite) {
+              return <CreationSiteCard key={service.titre} titre={service.titre} texte={service.texte} />;
+            }
+
             return (
             <article key={service.titre} className="glass-card p-6 transition duration-300 hover:-translate-y-1 hover:border-pulse/40">
               <Icon className="text-pulse" size={28} />

@@ -65,6 +65,23 @@ select {
   @apply bg-gradient-to-r from-white via-slatecopy to-pulse bg-clip-text text-transparent;
 }
 
+.creation-site-details {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(-0.5rem);
+  transition:
+    max-height 360ms ease,
+    opacity 260ms ease,
+    transform 260ms ease;
+}
+
+.creation-site-details.open {
+  max-height: 42rem;
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .mesh-bg {
   position: relative;
   isolation: isolate;
