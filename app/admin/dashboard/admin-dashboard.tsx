@@ -221,7 +221,7 @@ function MediaPanel({ media }: { media: MediaItem[] }) {
       <form action={uploadMedia} className="admin-panel grid gap-4">
         <h2 className="flex items-center gap-2 text-lg font-bold"><Plus size={18} /> Ajouter un media</h2>
         <input className="field" name="file" type="file" accept="image/*,video/mp4,video/webm,video/quicktime" required />
-        <p className="text-sm text-slatecopy">Images et videos jusqu'a 4 Mo.</p>
+        <p className="text-sm text-slatecopy">Images et videos jusqu'a 50 Mo.</p>
         <button className="button w-fit" type="submit"><Image size={18} /> Uploader</button>
       </form>
       <div className="grid gap-4 md:grid-cols-2">

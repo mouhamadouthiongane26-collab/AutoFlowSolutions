@@ -6,7 +6,7 @@ import { createSupabaseClient } from "../lib/supabase/server";
 import type { UserRole } from "@/lib/defaults";
 
 const publicPaths = ["/", "/services", "/offres", "/automatisation", "/contact"];
-const maxActionUploadSize = 4 * 1024 * 1024;
+const maxActionUploadSize = 50 * 1024 * 1024;
 const contentRoles: UserRole[] = ["admin"];
 
 function value(formData: FormData, key: string) {
@@ -200,7 +200,7 @@ export async function uploadMedia(formData: FormData) {
   const uploadedFile = file as File;
 
   if (uploadedFile.size > maxActionUploadSize) {
-    dashboardMessage("error", "Fichier trop lourd : utilisez un fichier de moins de 4 Mo.", "media");
+    dashboardMessage("error", "Fichier trop lourd : utilisez un fichier de moins de 50 Mo.", "media");
   }
 
   const type = uploadedFile.type.startsWith("video/") ? "video" : "image";
