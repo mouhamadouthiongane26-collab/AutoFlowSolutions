@@ -1,104 +1,109 @@
-import { createSupabaseClient } from "@/lib/supabase/server"
-import {
-  Article,
-  ContactMessage,
-  MediaItem,
-  defaultArticles,
-  defaultOffers,
-  defaultSections,
-  defaultMedia,
-  Offer,
-  SiteSection
-} from "./defaults"
+import { createSupabaseClient } from "@/lib/supabase/server";
+import { defaultArticles, defaultOffers, defaultTextValues, type Article, type ContactMessage, type MediaItem, type Offer, type TextItem, type UserRole } from "./defaults";
 
-// =========================
-// SECTIONS
-// =========================
-export async function getSections(): Promise<SiteSection[]> {
-  const supabase = await createSupabaseClient()
-
-  const { data, error } = await supabase
-    .from("site_sections")
-    .select("*")
-    .order("id")
-
-  return error || !data?.length ? defaultSections : data
+export function slugify(input: string) {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
 }
 
-export async function getSection(id: string): Promise<SiteSection> {
-  const sections = await getSections()
-  return (
-    sections.find((section) => section.id === id) ??
-    defaultSections.find((section) => section.id === id) ??
-    defaultSections[0]
-  )
+export function articlePath(article: Article) {
+  return `/articles/${slugify(article.titre) || article.id}`;
 }
 
-// =========================
-// OFFERS
-// =========================
-export async function getOffers(): Promise<Offer[]> {
-  const supabase = await createSupabaseClient()
+export async function getUserRole(): Promise<UserRole | null> {
+  const supabase = await createSupabaseClient();
+  if (!supabase) return null;
 
-  const { data, error } = await supabase
-    .from("offers")
-    .select("*")
-    .order("sort_order")
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return null;
 
-  return error || !data?.length ? defaultOffers : data
+  const { data } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  return data?.role ?? null;
 }
 
-// =========================
-// ARTICLES
-// =========================
-export async function getArticles(
-  { includeDrafts = false } = {}
-): Promise<Article[]> {
-  const supabase = await createSupabaseClient()
+export async function getTexts(): Promise<TextItem[]> {
+  const supabase = await createSupabaseClient();
+  if (!supabase) return [];
 
-  let query = supabase
-    .from("articles")
-    .select("*")
-    .order("created_at", { ascending: false })
+  const { data, error } = await supabase.from("textes").select("*").order("titre");
+  if (error) return [];
 
-  if (!includeDrafts) {
-    query = query.eq("published", true)
+  return (data ?? [])
+    .map((row: TextItem & { cle?: string; valeur?: string }) => ({
+      ...row,
+      titre: row.titre || row.cle || "",
+      contenu: row.contenu || row.valeur || ""
+    }))
+    .filter((row) => row.titre.length > 0);
+}
+
+export async function getTextMap() {
+  const rows = await getTexts();
+  return {
+    ...defaultTextValues,
+    ...Object.fromEntries(rows.map((row) => [row.titre, row.contenu]))
+  };
+}
+
+export function textValue(texts: Record<string, string>, key: string) {
+  return texts[key] ?? defaultTextValues[key] ?? "";
+}
+
+export function jsonTextValue<T>(texts: Record<string, string>, key: string, fallback: T): T {
+  const raw = texts[key];
+  if (!raw) return fallback;
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
   }
+}
 
-  const { data, error } = await query
+export async function getOffers(): Promise<Offer[]> {
+  const supabase = await createSupabaseClient();
+  if (!supabase) return defaultOffers;
 
-  return error || !data?.length ? defaultArticles : data
+  const { data, error } = await supabase.from("offres").select("*").order("created_at");
+  return error || !data?.length ? defaultOffers : data;
+}
+
+export async function getArticles(): Promise<Article[]> {
+  const supabase = await createSupabaseClient();
+  if (!supabase) return defaultArticles;
+
+  const { data, error } = await supabase.from("articles").select("*").order("created_at", { ascending: false });
+  return error || !data?.length ? defaultArticles : data;
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
-  const articles = await getArticles()
-  return articles.find((article) => article.slug === slug) ?? null
+  const articles = await getArticles();
+  return articles.find((article) => slugify(article.titre) === slug || article.id === slug) ?? null;
 }
 
 export async function getMedia(type?: MediaItem["type"]): Promise<MediaItem[]> {
-  const supabase = await createSupabaseClient()
+  const supabase = await createSupabaseClient();
+  if (!supabase) return [];
 
-  let query = supabase
-    .from("media")
-    .select("*")
-    .order("created_at", { ascending: false })
-
+  let query = supabase.from("media").select("*").order("created_at", { ascending: false });
   if (type) {
-    query = query.eq("type", type)
+    query = query.eq("type", type);
   }
 
-  const { data, error } = await query
-  const media = error || !data?.length ? defaultMedia : data
-
-  return type ? media.filter((item) => item.type === type) : media
+  const { data, error } = await query;
+  return error ? [] : (data ?? []).filter((item) => item.url.length > 0);
 }
+
 export async function getMessages(): Promise<ContactMessage[]> {
-  const supabase = await createSupabaseClient()
+  const supabase = await createSupabaseClient();
+  if (!supabase) return [];
 
-  const { data, error } = await supabase
-    .from("contact_messages")
-    .select("*")
-    .order("created_at", { ascending: false })
-
-  return error || !data?.length ? [] : data
+  const { data, error } = await supabase.from("messages").select("*").order("created_at", { ascending: false });
+  return error ? [] : data ?? [];
 }

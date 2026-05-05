@@ -1,41 +1,36 @@
-"use client";
-
-import { useState } from "react";
-import { FileText, Image, LayoutDashboard, LogOut, MessageSquare, PlaySquare, Tags, Type } from "lucide-react";
+import { FileText, Image, LogOut, Plus, Tags, Type } from "lucide-react";
 import {
-  addVideo,
   deleteArticle,
   deleteMedia,
+  deleteMessage,
   deleteOffer,
+  deleteText,
   signOut,
   uploadMedia,
   upsertArticle,
+  upsertMessage,
   upsertOffer,
-  upsertSection
+  upsertText
 } from "@/app/actions";
-import type { Article, ContactMessage, MediaItem, Offer, SiteSection } from "@/lib/defaults";
+import { articlePath } from "@/lib/data";
+import type { Article, ContactMessage, MediaItem, Offer, TextItem, UserRole } from "@/lib/defaults";
+import { DashboardTabs } from "./dashboard-tabs";
+import { DeleteButton } from "./delete-button";
 
 type Props = {
-  sections: SiteSection[];
+  texts: TextItem[];
   offers: Offer[];
   articles: Article[];
   media: MediaItem[];
   messages: ContactMessage[];
   userEmail?: string;
+  role: UserRole;
+  error?: string;
+  success?: string;
+  initialTab?: string;
 };
 
-const tabs = [
-  ["overview", "Vue générale", LayoutDashboard],
-  ["texts", "Textes", Type],
-  ["offers", "Offres", Tags],
-  ["articles", "Articles", FileText],
-  ["media", "Médias", Image],
-  ["messages", "Messages", MessageSquare]
-];
-
-export function AdminDashboard({ sections, offers, articles, media, messages, userEmail }: Props) {
-  const [active, setActive] = useState("overview");
-
+export function AdminDashboard({ texts, offers, articles, media, messages, userEmail, role, error, success, initialTab }: Props) {
   return (
     <div className="mesh-bg min-h-screen">
       <header className="border-b border-white/10 bg-ink/80 backdrop-blur-2xl">
@@ -43,50 +38,48 @@ export function AdminDashboard({ sections, offers, articles, media, messages, us
           <div>
             <img src="/logo-autoflow.svg" alt="AutoFlowSolutions" className="mb-2 h-14 w-auto rounded-lg bg-white px-3 py-2" />
             <h1 className="text-2xl font-bold">Dashboard administrateur</h1>
-            <p className="text-sm text-slatecopy">{userEmail}</p>
+            <p className="text-sm text-slatecopy">{userEmail} · role {role}</p>
           </div>
           <form action={signOut}>
-            <button className="button-secondary" type="submit"><LogOut size={18} /> Déconnexion</button>
+            <button className="button-secondary" type="submit"><LogOut size={18} /> Deconnexion</button>
           </form>
         </div>
       </header>
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[260px_1fr] lg:px-8">
-        <aside className="glass-card h-fit p-3">
-          <nav className="grid gap-2">
-            {tabs.map(([id, label, Icon]) => (
-              <button
-                key={String(id)}
-                type="button"
-                onClick={() => setActive(String(id))}
-                className={`flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-semibold transition duration-300 ${active === id ? "bg-gradient-to-r from-brand to-violet text-white shadow-glow" : "text-slatecopy hover:bg-white/[0.06] hover:text-white"}`}
-              >
-                <Icon size={18} />
-                {label as string}
-              </button>
-            ))}
-          </nav>
-        </aside>
-        <section className="grid gap-6">
-          {active === "overview" ? <Overview sections={sections} offers={offers} articles={articles} media={media} messages={messages} /> : null}
-          {active === "texts" ? <TextsPanel sections={sections} /> : null}
-          {active === "offers" ? <OffersPanel offers={offers} /> : null}
-          {active === "articles" ? <ArticlesPanel articles={articles} media={media} /> : null}
-          {active === "media" ? <MediaPanel media={media} /> : null}
-          {active === "messages" ? <MessagesPanel messages={messages} /> : null}
-        </section>
-      </div>
+      <StatusMessage error={error} success={success} />
+      <DashboardTabs
+        initialTab={initialTab}
+        showMessages
+        overview={<Overview texts={texts} offers={offers} articles={articles} media={media} messages={messages} />}
+        texts={<TextsPanel texts={texts} />}
+        offers={<OffersPanel offers={offers} />}
+        articles={<ArticlesPanel articles={articles} />}
+        media={<MediaPanel media={media} />}
+        messages={<MessagesPanel messages={messages} />}
+      />
     </div>
   );
 }
 
-function Overview({ sections, offers, articles, media, messages }: Props) {
+function StatusMessage({ error, success }: { error?: string; success?: string }) {
+  if (!error && !success) return null;
+
+  return (
+    <div className="mx-auto mt-6 max-w-7xl px-4 sm:px-6 lg:px-8">
+      {success ? <p className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 p-4 text-sm font-semibold text-emerald-100">{success}</p> : null}
+      {error ? <p className="rounded-lg border border-red-400/30 bg-red-500/10 p-4 text-sm font-semibold text-red-100">{error}</p> : null}
+    </div>
+  );
+}
+
+function Overview({ texts, offers, articles, media, messages }: Pick<Props, "texts" | "offers" | "articles" | "media" | "messages">) {
   const stats = [
-    ["Textes", sections.length],
+    ["Textes", texts.length],
     ["Offres", offers.length],
     ["Articles", articles.length],
-    ["Médias", media.length],
+    ["Medias", media.length],
     ["Messages", messages.length]
   ];
+
   return (
     <div className="grid gap-4 md:grid-cols-5">
       {stats.map(([label, value]) => (
@@ -96,46 +89,47 @@ function Overview({ sections, offers, articles, media, messages }: Props) {
         </div>
       ))}
       <div className="admin-panel md:col-span-5">
-        <h2 className="text-xl font-bold">Structure prête pour les automatisations</h2>
+        <h2 className="text-xl font-bold">Separation claire code / contenu</h2>
         <p className="mt-3 leading-7 text-slatecopy">
-          Les formulaires, messages, offres et contenus sont stockés dans Supabase. Vous pouvez ensuite connecter n8n, WhatsApp API,
-          un agent IA ou un générateur de devis via les tables et webhooks documentés dans le schéma.
+          Le code reste dans le projet. Le client modifie uniquement les lignes Supabase exposees ici : textes, offres,
+          articles, medias et messages.
         </p>
       </div>
     </div>
   );
 }
 
-function TextsPanel({ sections }: { sections: SiteSection[] }) {
+function TextsPanel({ texts }: { texts: TextItem[] }) {
   return (
     <div className="grid gap-5">
-      {sections.map((section) => (
-        <form key={section.id} action={upsertSection} className="admin-panel grid gap-4">
-          <input type="hidden" name="id" value={section.id} />
-          <div className="grid gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-brand">{section.id}</span>
-            <label className="grid gap-2">
-              <span className="label">Titre</span>
-              <input className="field" name="title" defaultValue={section.title} />
-            </label>
-            <label className="grid gap-2">
-              <span className="label">Texte</span>
-              <textarea className="field min-h-28" name="body" defaultValue={section.body} />
-            </label>
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="grid gap-2">
-                <span className="label">Badge</span>
-                <input className="field" name="badge" defaultValue={section.metadata?.badge ?? ""} />
-              </label>
-              <label className="grid gap-2">
-                <span className="label">Bouton</span>
-                <input className="field" name="cta" defaultValue={section.metadata?.cta ?? ""} />
-              </label>
-            </div>
-          </div>
-          <button className="button w-fit" type="submit">Enregistrer</button>
+      <TextForm />
+      {texts.map((text) => <TextForm key={text.id} text={text} />)}
+    </div>
+  );
+}
+
+function TextForm({ text }: { text?: TextItem }) {
+  return (
+    <div className="admin-panel grid gap-4">
+      <form action={upsertText} className="grid gap-4">
+        <input type="hidden" name="id" value={text?.id ?? ""} />
+        <h2 className="flex items-center gap-2 text-lg font-bold"><Type size={18} /> {text ? "Modifier un texte" : "Ajouter un texte"}</h2>
+        <label className="grid gap-2">
+          <span className="label">Titre / cle CMS</span>
+          <input className="field" name="titre" defaultValue={text?.titre ?? ""} placeholder="ex: home.hero.titre" required />
+        </label>
+        <label className="grid gap-2">
+          <span className="label">Contenu</span>
+          <textarea className="field min-h-28" name="contenu" defaultValue={text?.contenu ?? ""} required />
+        </label>
+        <button className="button w-fit" type="submit">{text ? "Modifier" : "Ajouter"}</button>
+      </form>
+      {text ? (
+        <form action={deleteText}>
+          <input type="hidden" name="id" value={text.id} />
+          <DeleteButton message="Supprimer ce texte ?" />
         </form>
-      ))}
+      ) : null}
     </div>
   );
 }
@@ -151,138 +145,93 @@ function OffersPanel({ offers }: { offers: Offer[] }) {
 
 function OfferForm({ offer }: { offer?: Offer }) {
   return (
-    <>
-    <form action={upsertOffer} className="admin-panel grid gap-4">
-      <input type="hidden" name="id" value={offer?.id ?? ""} />
-      <div className="grid gap-4 md:grid-cols-3">
+    <div className="admin-panel grid gap-4">
+      <form action={upsertOffer} className="grid gap-4">
+        <input type="hidden" name="id" value={offer?.id ?? ""} />
+        <h2 className="flex items-center gap-2 text-lg font-bold"><Tags size={18} /> {offer ? "Modifier une offre" : "Ajouter une offre"}</h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="grid gap-2">
+            <span className="label">Titre</span>
+            <input className="field" name="titre" defaultValue={offer?.titre ?? ""} required />
+          </label>
+          <label className="grid gap-2">
+            <span className="label">Prix</span>
+            <input className="field" name="prix" defaultValue={offer?.prix ?? ""} required />
+          </label>
+        </div>
         <label className="grid gap-2">
-          <span className="label">Nom</span>
-          <input className="field" name="name" defaultValue={offer?.name ?? ""} required />
+          <span className="label">Description</span>
+          <textarea className="field min-h-28" name="description" defaultValue={offer?.description ?? ""} required />
         </label>
-        <label className="grid gap-2">
-          <span className="label">Prix</span>
-          <input className="field" name="price" defaultValue={offer?.price ?? ""} required />
-        </label>
-        <label className="grid gap-2">
-          <span className="label">Ordre</span>
-          <input className="field" name="sort_order" type="number" defaultValue={offer?.sort_order ?? 99} />
-        </label>
-      </div>
-      <label className="grid gap-2">
-        <span className="label">Description</span>
-        <textarea className="field" name="description" defaultValue={offer?.description ?? ""} />
-      </label>
-      <label className="grid gap-2">
-        <span className="label">Fonctionnalités, une par ligne</span>
-        <textarea className="field min-h-28" name="features" defaultValue={offer?.features?.join("\n") ?? ""} />
-      </label>
-      <div className="flex flex-wrap gap-3">
-        <button className="button" type="submit">{offer ? "Modifier" : "Ajouter"} l’offre</button>
-      </div>
-    </form>
-    {offer ? (
-      <form action={deleteOffer} className="admin-panel pt-0">
-        <input type="hidden" name="id" value={offer.id} />
-        <button className="button-secondary" type="submit">Supprimer</button>
+        <button className="button w-fit" type="submit">{offer ? "Modifier" : "Ajouter"}</button>
       </form>
-    ) : null}
-    </>
-  );
-}
-
-function ArticlesPanel({ articles, media }: { articles: Article[]; media: MediaItem[] }) {
-  const images = media.filter((item) => item.type === "image");
-
-  return (
-    <div className="grid gap-5">
-      <ArticleForm images={images} />
-      {articles.map((article) => <ArticleForm key={article.id} article={article} images={images} />)}
+      {offer ? (
+        <form action={deleteOffer}>
+          <input type="hidden" name="id" value={offer.id} />
+          <DeleteButton message="Supprimer cette offre ?" />
+        </form>
+      ) : null}
     </div>
   );
 }
 
-function ArticleForm({ article, images }: { article?: Article; images: MediaItem[] }) {
-  const imageListId = `article-images-${article?.id ?? "new"}`;
-
+function ArticlesPanel({ articles }: { articles: Article[] }) {
   return (
-    <>
-    <form action={upsertArticle} className="admin-panel grid gap-4">
-      <input type="hidden" name="id" value={article?.id ?? ""} />
-      <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-5">
+      <ArticleForm />
+      {articles.map((article) => <ArticleForm key={article.id} article={article} />)}
+    </div>
+  );
+}
+
+function ArticleForm({ article }: { article?: Article }) {
+  return (
+    <div className="admin-panel grid gap-4">
+      <form action={upsertArticle} className="grid gap-4">
+        <input type="hidden" name="id" value={article?.id ?? ""} />
+        <h2 className="flex items-center gap-2 text-lg font-bold"><FileText size={18} /> {article ? "Modifier un article" : "Ajouter un article"}</h2>
         <label className="grid gap-2">
           <span className="label">Titre</span>
-          <input className="field" name="title" defaultValue={article?.title ?? ""} required />
+          <input className="field" name="titre" defaultValue={article?.titre ?? ""} required />
         </label>
         <label className="grid gap-2">
-          <span className="label">Slug URL</span>
-          <input className="field" name="slug" defaultValue={article?.slug ?? ""} />
+          <span className="label">Contenu</span>
+          <textarea className="field min-h-44" name="contenu" defaultValue={article?.contenu ?? ""} required />
         </label>
-      </div>
-      <label className="grid gap-2">
-        <span className="label">Résumé</span>
-        <textarea className="field" name="excerpt" defaultValue={article?.excerpt ?? ""} />
-      </label>
-      <label className="grid gap-2">
-        <span className="label">Contenu</span>
-        <textarea className="field min-h-44" name="content" defaultValue={article?.content ?? ""} />
-      </label>
-      <label className="grid gap-2">
-        <span className="label">Image de l’article</span>
-        <input className="field" name="image_url" defaultValue={article?.image_url ?? ""} list={imageListId} placeholder="URL de l’image ou image uploadée" />
-        {images.length ? (
-          <datalist id={imageListId}>
-            {images.map((image) => <option key={image.id} value={image.url}>{image.title}</option>)}
-          </datalist>
-        ) : null}
-      </label>
-      <label className="flex items-center gap-3 text-sm font-semibold">
-        <input name="published" type="checkbox" defaultChecked={article?.published ?? true} />
-        Publié
-      </label>
-      <div className="flex flex-wrap gap-3">
-        <button className="button" type="submit">{article ? "Modifier" : "Ajouter"} l’article</button>
-      </div>
-    </form>
-    {article ? (
-      <form action={deleteArticle} className="admin-panel pt-0">
-        <input type="hidden" name="id" value={article.id} />
-        <button className="button-secondary" type="submit">Supprimer</button>
+        <label className="grid gap-2">
+          <span className="label">Image URL</span>
+          <input className="field" name="image_url" defaultValue={article?.image_url ?? ""} placeholder="https://..." />
+        </label>
+        {article ? <a className="text-sm font-semibold text-pulse" href={articlePath(article)} target="_blank">Voir sur le site</a> : null}
+        <button className="button w-fit" type="submit">{article ? "Modifier" : "Ajouter"}</button>
       </form>
-    ) : null}
-    </>
+      {article ? (
+        <form action={deleteArticle}>
+          <input type="hidden" name="id" value={article.id} />
+          <DeleteButton message="Supprimer cet article ?" />
+        </form>
+      ) : null}
+    </div>
   );
 }
 
 function MediaPanel({ media }: { media: MediaItem[] }) {
   return (
     <div className="grid gap-5">
-      <div className="grid gap-5 md:grid-cols-2">
-        <form action={uploadMedia} className="admin-panel grid gap-4">
-          <h2 className="flex items-center gap-2 text-xl font-bold"><Image size={20} /> Ajouter une photo ou une vidéo</h2>
-          <input className="field" name="title" placeholder="Titre du média" />
-          <input className="field" name="file" type="file" accept="image/*,video/mp4,video/webm,video/quicktime" required />
-          <button className="button" type="submit">Uploader</button>
-        </form>
-        <form action={addVideo} className="admin-panel grid gap-4">
-          <h2 className="flex items-center gap-2 text-xl font-bold"><PlaySquare size={20} /> Ajouter une vidéo</h2>
-          <input className="field" name="title" placeholder="Titre de la vidéo" required />
-          <input className="field" name="url" placeholder="URL embed YouTube, Vimeo ou autre" required />
-          <button className="button" type="submit">Ajouter</button>
-        </form>
-      </div>
+      <form action={uploadMedia} className="admin-panel grid gap-4">
+        <h2 className="flex items-center gap-2 text-lg font-bold"><Plus size={18} /> Ajouter un media</h2>
+        <input className="field" name="file" type="file" accept="image/*,video/mp4,video/webm,video/quicktime" required />
+        <p className="text-sm text-slatecopy">Images et videos jusqu'a 4 Mo.</p>
+        <button className="button w-fit" type="submit"><Image size={18} /> Uploader</button>
+      </form>
       <div className="grid gap-4 md:grid-cols-2">
         {media.map((item) => (
           <div key={item.id} className="admin-panel">
             <p className="text-sm font-bold uppercase tracking-wider text-brand">{item.type}</p>
-            <h3 className="mt-2 font-bold">{item.title}</h3>
-            {item.type === "image" ? (
-              <img src={item.url} alt={item.title} className="mt-4 h-48 w-full rounded-lg object-cover" />
-            ) : (
-              <VideoPreview title={item.title} url={item.url} />
-            )}
+            <MediaPreview item={item} />
             <form action={deleteMedia} className="mt-4">
               <input type="hidden" name="id" value={item.id} />
-              <button className="button-secondary" type="submit">Supprimer</button>
+              <DeleteButton message="Supprimer ce media ?" />
             </form>
           </div>
         ))}
@@ -291,32 +240,58 @@ function MediaPanel({ media }: { media: MediaItem[] }) {
   );
 }
 
-function VideoPreview({ title, url }: { title: string; url: string }) {
-  const isFile = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+function MediaPreview({ item }: { item: MediaItem }) {
+  const isFile = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(item.url);
+  if (item.type === "image") {
+    return <img src={item.url} alt="" className="mt-4 h-48 w-full rounded-lg object-cover" />;
+  }
 
   return isFile ? (
-    <video src={url} title={title} className="mt-4 h-48 w-full rounded-lg bg-black object-cover" controls playsInline preload="metadata" />
+    <video src={item.url} className="mt-4 h-48 w-full rounded-lg bg-black object-cover" controls playsInline preload="metadata" />
   ) : (
-    <p className="mt-4 break-all text-sm text-slatecopy">{url}</p>
+    <p className="mt-4 break-all text-sm text-slatecopy">{item.url}</p>
   );
 }
 
 function MessagesPanel({ messages }: { messages: ContactMessage[] }) {
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-5">
+      <MessageForm />
       {messages.length === 0 ? <div className="admin-panel">Aucun message pour le moment.</div> : null}
-      {messages.map((message) => (
-        <article key={message.id} className="admin-panel">
-          <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h2 className="text-lg font-bold">{message.name}</h2>
-              <p className="text-sm text-slatecopy">{message.email} · {message.phone}</p>
-            </div>
-            <time className="text-sm text-slatecopy">{new Date(message.created_at).toLocaleString("fr-FR")}</time>
-          </div>
-          <p className="mt-4 whitespace-pre-line leading-7 text-slatecopy">{message.message}</p>
-        </article>
-      ))}
+      {messages.map((message) => <MessageForm key={message.id} message={message} />)}
+    </div>
+  );
+}
+
+function MessageForm({ message }: { message?: ContactMessage }) {
+  return (
+    <div className="admin-panel grid gap-4">
+      <form action={upsertMessage} className="grid gap-4">
+        <input type="hidden" name="id" value={message?.id ?? ""} />
+        <h2 className="flex items-center gap-2 text-lg font-bold">{message ? "Modifier un message" : "Ajouter un message"}</h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="grid gap-2">
+            <span className="label">Nom</span>
+            <input className="field" name="nom" defaultValue={message?.nom ?? ""} required />
+          </label>
+          <label className="grid gap-2">
+            <span className="label">Email</span>
+            <input className="field" name="email" type="email" defaultValue={message?.email ?? ""} required />
+          </label>
+        </div>
+        <label className="grid gap-2">
+          <span className="label">Message</span>
+          <textarea className="field min-h-28" name="message" defaultValue={message?.message ?? ""} required />
+        </label>
+        {message?.created_at ? <time className="text-sm text-slatecopy">{new Date(message.created_at).toLocaleString("fr-FR")}</time> : null}
+        <button className="button w-fit" type="submit">{message ? "Modifier" : "Ajouter"}</button>
+      </form>
+      {message ? (
+        <form action={deleteMessage}>
+          <input type="hidden" name="id" value={message.id} />
+          <DeleteButton message="Supprimer ce message ?" />
+        </form>
+      ) : null}
     </div>
   );
 }

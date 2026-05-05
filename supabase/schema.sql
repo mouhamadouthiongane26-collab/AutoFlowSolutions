@@ -1,130 +1,252 @@
--- AutoFlow Solutions - Supabase schema
--- Execute this file in the Supabase SQL editor before deploying.
+-- AutoFlow Solutions CMS schema
+-- Run this file in the Supabase SQL Editor for the project used by NEXT_PUBLIC_SUPABASE_URL.
 
 create extension if not exists "pgcrypto";
 
-create table if not exists public.site_sections (
-  id text primary key,
-  title text not null,
-  body text not null,
-  metadata jsonb not null default '{}'::jsonb,
-  updated_at timestamptz not null default now()
-);
+do $$ begin
+  create type public.app_role as enum ('admin', 'client');
+exception
+  when duplicate_object then null;
+end $$;
 
-create table if not exists public.offers (
-  id text primary key default gen_random_uuid()::text,
-  name text not null,
-  price text not null,
-  description text not null,
-  features text[] not null default '{}',
-  sort_order integer not null default 99,
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.articles (
-  id text primary key default gen_random_uuid()::text,
-  title text not null,
-  slug text not null unique,
-  excerpt text not null default '',
-  content text not null default '',
-  image_url text,
-  published boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.media (
-  id text primary key default gen_random_uuid()::text,
-  type text not null check (type in ('image', 'video')),
-  title text not null,
-  url text not null,
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  role public.app_role not null default 'client',
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.contact_messages (
+create table if not exists public.textes (
   id uuid primary key default gen_random_uuid(),
-  name text not null,
+  titre text not null,
+  contenu text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.offres (
+  id uuid primary key default gen_random_uuid(),
+  titre text not null,
+  description text not null default '',
+  prix text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.articles (
+  id uuid primary key default gen_random_uuid(),
+  titre text not null,
+  contenu text not null default '',
+  image_url text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.media (
+  id uuid primary key default gen_random_uuid(),
+  url text not null,
+  type text not null check (type in ('image', 'video')),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.messages (
+  id uuid primary key default gen_random_uuid(),
+  nom text not null,
   email text not null,
-  phone text not null,
   message text not null,
   created_at timestamptz not null default now()
 );
 
-create or replace function public.set_updated_at()
+-- Migrations from previous project versions.
+alter table public.textes add column if not exists titre text;
+alter table public.textes add column if not exists contenu text;
+alter table public.articles add column if not exists titre text;
+alter table public.articles add column if not exists contenu text;
+alter table public.articles add column if not exists image_url text;
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'textes' and column_name = 'cle'
+  ) then
+    execute 'update public.textes set titre = coalesce(titre, cle)';
+  end if;
+
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'textes' and column_name = 'valeur'
+  ) then
+    execute 'update public.textes set contenu = coalesce(contenu, valeur)';
+  end if;
+
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'articles' and column_name = 'title'
+  ) then
+    execute 'update public.articles set titre = coalesce(titre, title)';
+  end if;
+
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'articles' and column_name = 'content'
+  ) then
+    execute 'update public.articles set contenu = coalesce(contenu, content)';
+  end if;
+
+  if to_regclass('public.medias') is not null then
+    insert into public.media (url, type, created_at)
+    select url, type, created_at
+    from public.medias
+    where not exists (select 1 from public.media where public.media.url = public.medias.url);
+  end if;
+
+  if to_regclass('public.contact_messages') is not null then
+    insert into public.messages (nom, email, message, created_at)
+    select name, email, message, created_at
+    from public.contact_messages
+    where not exists (
+      select 1
+      from public.messages
+      where public.messages.email = public.contact_messages.email
+        and public.messages.message = public.contact_messages.message
+    );
+  end if;
+end $$;
+
+update public.textes set titre = coalesce(titre, '');
+update public.textes set contenu = coalesce(contenu, '');
+update public.articles set titre = coalesce(titre, '');
+update public.articles set contenu = coalesce(contenu, '');
+
+alter table public.textes alter column titre set not null;
+alter table public.textes alter column contenu set not null;
+alter table public.articles alter column titre set not null;
+alter table public.articles alter column contenu set not null;
+
+create or replace function public.create_profile_for_new_user()
 returns trigger
 language plpgsql
+security definer
+set search_path = public
 as $$
 begin
-  new.updated_at = now();
+  insert into public.profiles (id, role)
+  values (new.id, 'client')
+  on conflict (id) do nothing;
   return new;
 end;
 $$;
 
-drop trigger if exists set_site_sections_updated_at on public.site_sections;
-create trigger set_site_sections_updated_at
-before update on public.site_sections
-for each row execute function public.set_updated_at();
+drop trigger if exists create_profile_for_new_user on auth.users;
+create trigger create_profile_for_new_user
+after insert on auth.users
+for each row execute function public.create_profile_for_new_user();
 
-drop trigger if exists set_offers_updated_at on public.offers;
-create trigger set_offers_updated_at
-before update on public.offers
-for each row execute function public.set_updated_at();
+insert into public.profiles (id, role)
+select id, 'client'
+from auth.users
+on conflict (id) do nothing;
 
-drop trigger if exists set_articles_updated_at on public.articles;
-create trigger set_articles_updated_at
-before update on public.articles
-for each row execute function public.set_updated_at();
+create or replace function public.current_user_role()
+returns public.app_role
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select role from public.profiles where id = auth.uid()
+$$;
 
-alter table public.site_sections enable row level security;
-alter table public.offers enable row level security;
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(public.current_user_role() = 'admin', false)
+$$;
+
+alter table public.profiles enable row level security;
+alter table public.textes enable row level security;
+alter table public.offres enable row level security;
 alter table public.articles enable row level security;
 alter table public.media enable row level security;
-alter table public.contact_messages enable row level security;
+alter table public.messages enable row level security;
 
-drop policy if exists "Public can read site sections" on public.site_sections;
-create policy "Public can read site sections" on public.site_sections for select using (true);
-drop policy if exists "Admins manage site sections" on public.site_sections;
-create policy "Admins manage site sections" on public.site_sections for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+drop policy if exists "Users can read own profile" on public.profiles;
+create policy "Users can read own profile" on public.profiles for select using (id = auth.uid());
+drop policy if exists "Admins manage profiles" on public.profiles;
+create policy "Admins manage profiles" on public.profiles for all using (public.is_admin()) with check (public.is_admin());
 
-drop policy if exists "Public can read offers" on public.offers;
-create policy "Public can read offers" on public.offers for select using (true);
-drop policy if exists "Admins manage offers" on public.offers;
-create policy "Admins manage offers" on public.offers for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+drop policy if exists "Public can read textes" on public.textes;
+create policy "Public can read textes" on public.textes for select using (true);
+drop policy if exists "Admins manage textes" on public.textes;
+create policy "Admins manage textes" on public.textes for all using (public.is_admin()) with check (public.is_admin());
 
-drop policy if exists "Public can read published articles" on public.articles;
-create policy "Public can read published articles" on public.articles for select using (published = true or auth.role() = 'authenticated');
+drop policy if exists "Public can read offres" on public.offres;
+create policy "Public can read offres" on public.offres for select using (true);
+drop policy if exists "Admins manage offres" on public.offres;
+create policy "Admins manage offres" on public.offres for all using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "Public can read articles" on public.articles;
+create policy "Public can read articles" on public.articles for select using (true);
 drop policy if exists "Admins manage articles" on public.articles;
-create policy "Admins manage articles" on public.articles for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "Admins manage articles" on public.articles for all using (public.is_admin()) with check (public.is_admin());
 
 drop policy if exists "Public can read media" on public.media;
 create policy "Public can read media" on public.media for select using (true);
 drop policy if exists "Admins manage media" on public.media;
-create policy "Admins manage media" on public.media for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "Admins manage media" on public.media for all using (public.is_admin()) with check (public.is_admin());
 
-drop policy if exists "Anyone can send contact message" on public.contact_messages;
-create policy "Anyone can send contact message" on public.contact_messages for insert with check (true);
-drop policy if exists "Admins can read contact messages" on public.contact_messages;
-create policy "Admins can read contact messages" on public.contact_messages for select using (auth.role() = 'authenticated');
+drop policy if exists "Admins manage messages" on public.messages;
+create policy "Admins manage messages" on public.messages for all using (public.is_admin()) with check (public.is_admin());
+drop policy if exists "Public can create messages" on public.messages;
+create policy "Public can create messages" on public.messages for insert with check (true);
 
-insert into public.site_sections (id, title, body, metadata) values
-('home_hero', 'AutoFlowSolutions', 'Nous créons des sites professionnels connectés à des automatisations intelligentes pour transformer vos demandes clients en opportunités traitées rapidement.', '{"cta":"Demander un devis","badge":"Sites web, WhatsApp, IA et automatisation"}'),
-('services_intro', 'Des systèmes digitaux qui travaillent avec vous', 'AutoFlowSolutions conçoit des sites modernes, des formulaires connectés, des tunnels de devis et des automatisations WhatsApp ou IA pour réduire les tâches répétitives.', '{}'),
-('automation_intro', 'Automatiser sans perdre la relation humaine', 'Un client envoie une demande, le système collecte les informations, répond automatiquement, prépare un devis et alerte votre équipe au bon moment.', '{}'),
-('contact_intro', 'Parlez-nous de votre projet', 'Décrivez votre besoin et nous vous répondrons avec une recommandation claire, adaptée à votre activité.', '{}')
-on conflict (id) do nothing;
+insert into public.textes (titre, contenu)
+select *
+from (
+  values
+    ('site.meta.titre', 'AutoFlowSolutions | Sites web et automatisation'),
+    ('site.meta.description', 'Création de sites professionnels, automatisation WhatsApp, IA, devis automatique et dashboard administrable.'),
+    ('home.hero.titre', 'AutoFlowSolutions'),
+    ('home.hero.texte', 'Nous créons des sites professionnels connectés à des automatisations intelligentes pour transformer vos demandes clients en opportunités traitées rapidement.'),
+    ('services.intro.titre', 'Des systèmes digitaux qui travaillent avec vous'),
+    ('services.intro.texte', 'AutoFlowSolutions conçoit des sites modernes, des formulaires connectés, des tunnels de devis et des automatisations WhatsApp ou IA pour réduire les tâches répétitives.'),
+    ('services.items', '[{"titre":"Création de site","texte":"Site vitrine ou plateforme complète, responsive, rapide et modifiable depuis un dashboard."},{"titre":"Automatisation WhatsApp","texte":"Réponses automatiques, collecte d’informations, alertes et suivi des prospects."},{"titre":"Devis automatique","texte":"Qualification des besoins et génération de demandes structurées pour gagner du temps."},{"titre":"Intégrations IA et n8n","texte":"Workflows évolutifs pour connecter formulaires, CRM, emails, WhatsApp et agents IA."}]'),
+    ('automation.intro.titre', 'Automatiser sans perdre la relation humaine'),
+    ('automation.intro.texte', 'Un client envoie une demande, le système collecte les informations, répond automatiquement, prépare un devis et alerte votre équipe au bon moment.'),
+    ('home.automation.points', '["Orchestration, données et réponses reliées en temps réel","Formulaires, CRM et notifications connectés","Réponses client rapides avec contrôle humain"]'),
+    ('automation.steps', '[{"titre":"Demande reçue","texte":"Le formulaire ou WhatsApp capte le besoin client."},{"titre":"Analyse automatique","texte":"Les informations sont structurées pour identifier le bon service."},{"titre":"Devis préparé","texte":"Le système génère une base de devis ou une fiche de qualification."},{"titre":"Équipe alertée","texte":"Vous recevez une notification claire et exploitable."}]'),
+    ('contact.intro.titre', 'Parlez-nous de votre projet'),
+    ('contact.intro.texte', 'Décrivez votre besoin et nous vous répondrons avec une recommandation claire, adaptée à votre activité.'),
+    ('contact.note.titre', 'Ce formulaire est connecté à Tally.'),
+    ('contact.note.texte', 'Les demandes sont envoyées via votre formulaire de qualification.'),
+    ('contact.form.url', 'https://tally.so/embed/zxWgaM?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1'),
+    ('offres.page.titre', 'Choisissez le niveau d’accompagnement adapté'),
+    ('offres.page.texte', 'Chaque pack peut évoluer avec vos besoins : site administrable, contenus dynamiques, automatisation, WhatsApp, IA et génération de devis.'),
+    ('home.offres.titre', 'Des packs clairs, évolutifs'),
+    ('home.medias.titre', 'Photos et vidéos ajoutées depuis l’admin'),
+    ('stats.items', '[{"valeur":"24/7","label":"réponse automatique"},{"valeur":"-40%","label":"temps administratif"},{"valeur":"100%","label":"contenu administrable"}]'),
+    ('footer.texte', 'Sites web administrables, automatisations WhatsApp, agents IA et systèmes de devis pour entreprises ambitieuses.'),
+    ('footer.slogan', 'Automatisez. Gérez. Développez.')
+) as seed(titre, contenu)
+where not exists (select 1 from public.textes where public.textes.titre = seed.titre);
 
-insert into public.offers (id, name, price, description, features, sort_order) values
-('starter', 'Pack Starter', '690 EUR', 'L’essentiel pour lancer une présence professionnelle et convertir les premiers prospects.', array['Site vitrine responsive','Formulaire de contact','Pages services et offres','Préparation SEO locale'], 1),
-('business', 'Pack Business', '1 490 EUR', 'Un site complet avec gestion de contenu et automatisations pour gagner du temps.', array['Dashboard admin','Articles, galerie et vidéos','Devis automatique','Connexion WhatsApp ou email'], 2),
-('premium', 'Pack Premium', 'Sur devis', 'Une plateforme sur mesure avec agent IA, workflows avancés et intégrations métier.', array['Agent IA client','Workflows n8n','CRM et API externes','Accompagnement stratégique'], 3)
-on conflict (id) do nothing;
+insert into public.offres (titre, prix, description)
+select *
+from (
+  values
+    ('Pack Starter', '690 EUR', 'L’essentiel pour lancer une présence professionnelle et convertir les premiers prospects.'),
+    ('Pack Business', '1 490 EUR', 'Un site complet avec gestion de contenu et automatisations pour gagner du temps.'),
+    ('Pack Premium', 'Sur devis', 'Une plateforme sur mesure avec agent IA, workflows avancés et intégrations métier.')
+) as seed(titre, prix, description)
+where not exists (select 1 from public.offres);
 
-insert into public.articles (id, title, slug, excerpt, content, published) values
-('demo-article', 'Pourquoi automatiser les demandes clients ?', 'pourquoi-automatiser-demandes-clients', 'Une réponse rapide augmente la confiance, réduit les pertes de prospects et libère du temps pour les tâches à forte valeur.', 'Les entreprises perdent souvent des opportunités parce que les demandes ne sont pas traitées assez vite. Avec un site connecté, chaque message peut être enregistré, qualifié et transmis automatiquement.', true)
-on conflict (id) do nothing;
+insert into public.articles (titre, contenu, image_url)
+select 'Pourquoi automatiser les demandes clients ?', 'Les entreprises perdent souvent des opportunités parce que les demandes ne sont pas traitées assez vite. Avec un site connecté, chaque message peut être enregistré, qualifié et transmis automatiquement.', null
+where not exists (select 1 from public.articles);
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('media', 'media', true, 52428800, array['image/png','image/jpeg','image/webp','image/gif','video/mp4','video/webm','video/quicktime'])
+values ('media', 'media', true, 52428800, array['image/png','image/jpeg','image/webp','image/gif','image/svg+xml','video/mp4','video/webm','video/quicktime'])
 on conflict (id) do update set
   public = excluded.public,
   file_size_limit = excluded.file_size_limit,
@@ -133,8 +255,13 @@ on conflict (id) do update set
 drop policy if exists "Public can read media bucket" on storage.objects;
 create policy "Public can read media bucket" on storage.objects for select using (bucket_id = 'media');
 drop policy if exists "Admins upload media bucket" on storage.objects;
-create policy "Admins upload media bucket" on storage.objects for insert with check (bucket_id = 'media' and auth.role() = 'authenticated');
+create policy "Admins upload media bucket" on storage.objects for insert with check (bucket_id = 'media' and public.is_admin());
 drop policy if exists "Admins update media bucket" on storage.objects;
-create policy "Admins update media bucket" on storage.objects for update using (bucket_id = 'media' and auth.role() = 'authenticated');
+create policy "Admins update media bucket" on storage.objects for update using (bucket_id = 'media' and public.is_admin());
 drop policy if exists "Admins delete media bucket" on storage.objects;
-create policy "Admins delete media bucket" on storage.objects for delete using (bucket_id = 'media' and auth.role() = 'authenticated');
+create policy "Admins delete media bucket" on storage.objects for delete using (bucket_id = 'media' and public.is_admin());
+
+-- Promote your developer account after signup:
+-- update public.profiles set role = 'admin' where id = '<auth-user-id>';
+
+notify pgrst, 'reload schema';

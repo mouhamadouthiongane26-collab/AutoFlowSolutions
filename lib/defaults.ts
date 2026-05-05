@@ -1,118 +1,96 @@
-export type SiteSection = {
+export type UserRole = "admin" | "client";
+
+export type TextItem = {
   id: string;
-  title: string;
-  body: string;
-  metadata?: Record<string, string>;
+  titre: string;
+  contenu: string;
+  created_at?: string;
 };
 
 export type Offer = {
   id: string;
-  name: string;
-  price: string;
+  titre: string;
+  prix: string;
   description: string;
-  features: string[];
-  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type Article = {
   id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
+  titre: string;
+  contenu: string;
   image_url: string | null;
-  published: boolean;
   created_at?: string;
 };
 
 export type MediaItem = {
   id: string;
   type: "image" | "video";
-  title: string;
   url: string;
   created_at?: string;
 };
 
 export type ContactMessage = {
   id: string;
-  name: string;
+  nom: string;
   email: string;
-  phone: string;
   message: string;
   created_at: string;
 };
 
-export const defaultSections: SiteSection[] = [
-  {
-    id: "home_hero",
-    title: "AutoFlowSolutions",
-    body: "Nous créons des sites professionnels connectés à des automatisations intelligentes pour transformer vos demandes clients en opportunités traitées rapidement.",
-    metadata: {
-      cta: "Demander un devis",
-      badge: "Sites web, WhatsApp, IA et automatisation"
-    }
-  },
-  {
-    id: "services_intro",
-    title: "Des systèmes digitaux qui travaillent avec vous",
-    body: "AutoFlowSolutions conçoit des sites modernes, des formulaires connectés, des tunnels de devis et des automatisations WhatsApp ou IA pour réduire les tâches répétitives."
-  },
-  {
-    id: "automation_intro",
-    title: "Automatiser sans perdre la relation humaine",
-    body: "Un client envoie une demande, le système collecte les informations, répond automatiquement, prépare un devis et alerte votre équipe au bon moment."
-  },
-  {
-    id: "contact_intro",
-    title: "Parlez-nous de votre projet",
-    body: "Décrivez votre besoin et nous vous répondrons avec une recommandation claire, adaptée à votre activité."
-  }
-];
+export const defaultTextValues: Record<string, string> = {
+  "site.meta.titre": "AutoFlowSolutions | Sites web et automatisation",
+  "site.meta.description": "Création de sites professionnels, automatisation WhatsApp, IA, devis automatique et dashboard administrable.",
+  "home.hero.titre": "AutoFlowSolutions",
+  "home.hero.texte": "Nous créons des sites professionnels connectés à des automatisations intelligentes pour transformer vos demandes clients en opportunités traitées rapidement.",
+  "services.intro.titre": "Des systèmes digitaux qui travaillent avec vous",
+  "services.intro.texte": "AutoFlowSolutions conçoit des sites modernes, des formulaires connectés, des tunnels de devis et des automatisations WhatsApp ou IA pour réduire les tâches répétitives.",
+  "services.items": "[{\"titre\":\"Création de site\",\"texte\":\"Site vitrine ou plateforme complète, responsive, rapide et modifiable depuis un dashboard.\"},{\"titre\":\"Automatisation WhatsApp\",\"texte\":\"Réponses automatiques, collecte d’informations, alertes et suivi des prospects.\"},{\"titre\":\"Devis automatique\",\"texte\":\"Qualification des besoins et génération de demandes structurées pour gagner du temps.\"},{\"titre\":\"Intégrations IA et n8n\",\"texte\":\"Workflows évolutifs pour connecter formulaires, CRM, emails, WhatsApp et agents IA.\"}]",
+  "automation.intro.titre": "Automatiser sans perdre la relation humaine",
+  "automation.intro.texte": "Un client envoie une demande, le système collecte les informations, répond automatiquement, prépare un devis et alerte votre équipe au bon moment.",
+  "home.automation.points": "[\"Orchestration, données et réponses reliées en temps réel\",\"Formulaires, CRM et notifications connectés\",\"Réponses client rapides avec contrôle humain\"]",
+  "automation.steps": "[{\"titre\":\"Demande reçue\",\"texte\":\"Le formulaire ou WhatsApp capte le besoin client.\"},{\"titre\":\"Analyse automatique\",\"texte\":\"Les informations sont structurées pour identifier le bon service.\"},{\"titre\":\"Devis préparé\",\"texte\":\"Le système génère une base de devis ou une fiche de qualification.\"},{\"titre\":\"Équipe alertée\",\"texte\":\"Vous recevez une notification claire et exploitable.\"}]",
+  "contact.intro.titre": "Parlez-nous de votre projet",
+  "contact.intro.texte": "Décrivez votre besoin et nous vous répondrons avec une recommandation claire, adaptée à votre activité.",
+  "contact.note.titre": "Ce formulaire est connecté à Tally.",
+  "contact.note.texte": "Les demandes sont envoyées via votre formulaire de qualification.",
+  "contact.form.url": "https://tally.so/embed/zxWgaM?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1",
+  "offres.page.titre": "Choisissez le niveau d’accompagnement adapté",
+  "offres.page.texte": "Chaque pack peut évoluer avec vos besoins : site administrable, contenus dynamiques, automatisation, WhatsApp, IA et génération de devis.",
+  "home.offres.titre": "Des packs clairs, évolutifs",
+  "home.medias.titre": "Photos et vidéos ajoutées depuis l’admin",
+  "stats.items": "[{\"valeur\":\"24/7\",\"label\":\"réponse automatique\"},{\"valeur\":\"-40%\",\"label\":\"temps administratif\"},{\"valeur\":\"100%\",\"label\":\"contenu administrable\"}]",
+  "footer.texte": "Sites web administrables, automatisations WhatsApp, agents IA et systèmes de devis pour entreprises ambitieuses.",
+  "footer.slogan": "Automatisez. Gérez. Développez."
+};
 
 export const defaultOffers: Offer[] = [
   {
     id: "starter",
-    name: "Pack Starter",
-    price: "690 EUR",
-    description: "L’essentiel pour lancer une présence professionnelle et convertir les premiers prospects.",
-    features: ["Site vitrine responsive", "Formulaire de contact", "Pages services et offres", "Préparation SEO locale"],
-    sort_order: 1
+    titre: "Pack Starter",
+    prix: "690 EUR",
+    description: "L’essentiel pour lancer une présence professionnelle et convertir les premiers prospects."
   },
   {
     id: "business",
-    name: "Pack Business",
-    price: "1 490 EUR",
-    description: "Un site complet avec gestion de contenu et automatisations pour gagner du temps.",
-    features: ["Dashboard admin", "Articles, galerie et vidéos", "Devis automatique", "Connexion WhatsApp ou email"],
-    sort_order: 2
+    titre: "Pack Business",
+    prix: "1 490 EUR",
+    description: "Un site complet avec gestion de contenu et automatisations pour gagner du temps."
   },
   {
     id: "premium",
-    name: "Pack Premium",
-    price: "Sur devis",
-    description: "Une plateforme sur mesure avec agent IA, workflows avancés et intégrations métier.",
-    features: ["Agent IA client", "Workflows n8n", "CRM et API externes", "Accompagnement stratégique"],
-    sort_order: 3
+    titre: "Pack Premium",
+    prix: "Sur devis",
+    description: "Une plateforme sur mesure avec agent IA, workflows avancés et intégrations métier."
   }
 ];
 
 export const defaultArticles: Article[] = [
   {
     id: "demo-article",
-    title: "Pourquoi automatiser les demandes clients ?",
-    slug: "pourquoi-automatiser-demandes-clients",
-    excerpt: "Une réponse rapide augmente la confiance, réduit les pertes de prospects et libère du temps pour les tâches à forte valeur.",
-    content: "Les entreprises perdent souvent des opportunités parce que les demandes ne sont pas traitées assez vite. Avec un site connecté, chaque message peut être enregistré, qualifié et transmis automatiquement. L’équipe garde le contrôle, mais le système absorbe les tâches répétitives : confirmation de réception, collecte d’informations, préparation de devis et relance.",
-    image_url: null,
-    published: true
-  }
-];
-
-export const defaultMedia: MediaItem[] = [
-  {
-    id: "video-demo",
-    type: "video",
-    title: "Présentation automatisation",
-    url: "/Design sans titre (1).mp4"
+    titre: "Pourquoi automatiser les demandes clients ?",
+    contenu: "Les entreprises perdent souvent des opportunités parce que les demandes ne sont pas traitées assez vite. Avec un site connecté, chaque message peut être enregistré, qualifié et transmis automatiquement.",
+    image_url: null
   }
 ];

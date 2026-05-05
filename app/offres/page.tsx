@@ -1,18 +1,18 @@
 import { OfferCard } from "@/components/offer-card";
 import { PublicShell } from "@/components/public-shell";
-import { getOffers } from "@/lib/data";
+import { getOffers, getTextMap, textValue } from "@/lib/data";
 
 export default async function OffersPage() {
-  const offers = await getOffers();
+  const [texts, offers] = await Promise.all([getTextMap(), getOffers()]);
 
   return (
     <PublicShell>
       <section className="mesh-bg section">
         <div className="max-w-3xl">
           <p className="eyebrow">Offres</p>
-          <h1 className="gradient-text mt-4 text-4xl font-bold">Choisissez le niveau d’accompagnement adapté</h1>
+          <h1 className="gradient-text mt-4 text-4xl font-bold">{textValue(texts, "offres.page.titre")}</h1>
           <p className="mt-5 text-lg leading-8 text-slatecopy">
-            Chaque pack peut évoluer avec vos besoins : site administrable, contenus dynamiques, automatisation, WhatsApp, IA et génération de devis.
+            {textValue(texts, "offres.page.texte")}
           </p>
         </div>
         <div className="mt-12 grid gap-5 lg:grid-cols-3">
