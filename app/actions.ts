@@ -3,6 +3,9 @@
 import { createSupabaseClient } from '../lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+
+const publicPaths = ["/", "/services", "/offres", "/automatisation", "/contact"];
+
 function value(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
@@ -30,6 +33,11 @@ async function requireAdmin() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/admin/login");
   return supabase;
+}
+
+function revalidatePublicSite() {
+  publicPaths.forEach((path) => revalidatePath(path));
+  revalidatePath("/articles/[slug]", "page");
 }
 
 export async function signIn(formData: FormData) {
@@ -90,9 +98,7 @@ export async function upsertSection(formData: FormData) {
     }
   });
   revalidatePath("/");
-  revalidatePath("/services");
-  revalidatePath("/automatisation");
-  revalidatePath("/contact");
+  revalidatePublicSite();
 }
 
 export async function upsertOffer(formData: FormData) {
@@ -106,14 +112,13 @@ export async function upsertOffer(formData: FormData) {
     features: value(formData, "features").split("\n").map((item) => item.trim()).filter(Boolean),
     sort_order: Number(value(formData, "sort_order") || 99)
   });
-  revalidatePath("/");
-  revalidatePath("/offres");
+  revalidatePublicSite();
 }
 
 export async function deleteOffer(formData: FormData) {
   const supabase = await requireAdmin();
   await supabase.from("offers").delete().eq("id", value(formData, "id"));
-  revalidatePath("/offres");
+  revalidatePublicSite();
 }
 
 export async function upsertArticle(formData: FormData) {
@@ -129,14 +134,13 @@ export async function upsertArticle(formData: FormData) {
     image_url: value(formData, "image_url") || null,
     published: formData.get("published") === "on"
   });
-  revalidatePath("/");
-  revalidatePath("/articles/[slug]", "page");
+  revalidatePublicSite();
 }
 
 export async function deleteArticle(formData: FormData) {
   const supabase = await requireAdmin();
   await supabase.from("articles").delete().eq("id", value(formData, "id"));
-  revalidatePath("/");
+  revalidatePublicSite();
 }
 
 export async function addVideo(formData: FormData) {
@@ -146,17 +150,17 @@ export async function addVideo(formData: FormData) {
     title: value(formData, "title"),
     url: value(formData, "url")
   });
-  revalidatePath("/");
-  revalidatePath("/automatisation");
+  revalidatePublicSite();
 }
 
-export async function uploadImage(formData: FormData) {
+export async function uploadMedia(formData: FormData) {
   const supabase = await requireAdmin();
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return;
 
+  const type = file.type.startsWith("video/") ? "video" : "image";
   const extension = file.name.split(".").pop() ?? "jpg";
-  const safeName = `${crypto.randomUUID()}.${extension}`;
+  const safeName = `${type}/${crypto.randomUUID()}.${extension}`;
   const { error } = await supabase.storage.from("media").upload(safeName, file, {
     cacheControl: "3600",
     upsert: false
@@ -165,16 +169,29 @@ export async function uploadImage(formData: FormData) {
 
   const { data } = supabase.storage.from("media").getPublicUrl(safeName);
   await supabase.from("media").insert({
-    type: "image",
+    type,
     title: value(formData, "title") || file.name,
     url: data.publicUrl
   });
-  revalidatePath("/");
+  revalidatePublicSite();
+}
+
+export async function uploadImage(formData: FormData) {
+  return uploadMedia(formData);
 }
 
 export async function deleteMedia(formData: FormData) {
   const supabase = await requireAdmin();
-  await supabase.from("media").delete().eq("id", value(formData, "id"));
-  revalidatePath("/");
-  revalidatePath("/automatisation");
+  const id = value(formData, "id");
+  const { data } = await supabase.from("media").select("url").eq("id", id).maybeSingle();
+
+  if (data?.url?.includes("/storage/v1/object/public/media/")) {
+    const storagePath = data.url.split("/storage/v1/object/public/media/")[1]?.split("?")[0];
+    if (storagePath) {
+      await supabase.storage.from("media").remove([decodeURIComponent(storagePath)]);
+    }
+  }
+
+  await supabase.from("media").delete().eq("id", id);
+  revalidatePublicSite();
 }

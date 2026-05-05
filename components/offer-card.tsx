@@ -8,6 +8,7 @@ export function OfferCard({ offer, highlighted = false }: { offer: Offer; highli
       <div className="flex items-start gap-4">
         <h3 className="text-xl font-bold">{offer.name}</h3>
       </div>
+      <p className="mt-4 text-2xl font-bold text-pulse">{offer.price}</p>
       <p className="mt-4 text-sm leading-6 text-slatecopy">{offer.description}</p>
       <ul className="mt-6 grid gap-3 text-sm">
         {offer.features.map((feature) => (

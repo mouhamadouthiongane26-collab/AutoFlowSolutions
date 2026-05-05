@@ -1,24 +1,20 @@
 import Link from "next/link"
 import { Network, CircuitBoard, MessageSquare } from "lucide-react"
+import { OfferCard } from "@/components/offer-card"
 import { PublicShell } from "@/components/public-shell"
 import { StatBand } from "@/components/stat-band"
-import { getSection, getOffers } from "@/lib/data"
-import { createSupabaseClient } from "@/lib/supabase/server"
+import { getArticles, getMedia, getOffers, getSection } from "@/lib/data"
 
 export default async function HomePage() {
-  const supabase = await createSupabaseClient()
-
-  const [hero, services, automation, offers, articlesRes] = await Promise.all([
+  const [hero, services, automation, offers, articles, media] = await Promise.all([
     getSection("home_hero"),
     getSection("services_intro"),
     getSection("automation_intro"),
     getOffers(),
-    supabase.from("articles").select("*"),
+    getArticles(),
+    getMedia()
   ])
-
-  const articles = Array.isArray(articlesRes.data)
-    ? articlesRes.data
-    : []
+  const featuredMedia = media.slice(0, 4)
 
   return (
     <PublicShell>
@@ -73,6 +69,9 @@ export default async function HomePage() {
               href={`/articles/${article.slug}`}
               className="glass-card p-5 transition duration-300"
             >
+              {article.image_url ? (
+                <img src={article.image_url} alt="" className="mb-4 h-40 w-full rounded-lg object-cover" />
+              ) : null}
               <h3 className="font-bold">{article.title}</h3>
               <p className="mt-3 text-sm leading-6 text-slatecopy">
                 {article.excerpt}
@@ -81,6 +80,21 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      {featuredMedia.length ? (
+        <section className="section">
+          <p className="eyebrow">Médias</p>
+          <h2 className="mt-4 text-3xl font-bold">Photos et vidéos ajoutées depuis l’admin</h2>
+          <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+            {featuredMedia.map((item) => (
+              <article key={item.id} className="glass-card overflow-hidden">
+                <MediaPreview title={item.title} type={item.type} url={item.url} />
+                <p className="p-4 font-semibold">{item.title}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* OFFRES */}
       <section className="section">
@@ -91,19 +105,25 @@ export default async function HomePage() {
         </h2>
 
         <div className="mt-8 grid gap-5 md:grid-cols-3">
-          {offers.map((offer: any, index: number) => (
-            <div
-              key={offer.id}
-              className={`p-5 border rounded-lg ${
-                index === 1 ? "border-blue-500" : ""
-              }`}
-            >
-              <h3 className="font-bold">{offer.title}</h3>
-              <p>{offer.price}</p>
-            </div>
+          {offers.map((offer, index) => (
+            <OfferCard key={offer.id} offer={offer} highlighted={index === 1} />
           ))}
         </div>
       </section>
     </PublicShell>
   )
+}
+
+function MediaPreview({ title, type, url }: { title: string; type: "image" | "video"; url: string }) {
+  const isVideoFile = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+
+  if (type === "image") {
+    return <img src={url} alt={title} className="aspect-video w-full object-cover" />;
+  }
+
+  return isVideoFile ? (
+    <video src={url} title={title} className="aspect-video w-full bg-black object-cover" controls playsInline preload="metadata" />
+  ) : (
+    <iframe src={url} title={title} className="aspect-video w-full" allowFullScreen />
+  );
 }

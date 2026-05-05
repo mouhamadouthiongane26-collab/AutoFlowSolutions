@@ -107,8 +107,8 @@ drop policy if exists "Admins can read contact messages" on public.contact_messa
 create policy "Admins can read contact messages" on public.contact_messages for select using (auth.role() = 'authenticated');
 
 insert into public.site_sections (id, title, body, metadata) values
-('home_hero', 'AutoFlow Solutions', 'Nous créons des sites professionnels connectés à des automatisations intelligentes pour transformer vos demandes clients en opportunités traitées rapidement.', '{"cta":"Demander un devis","badge":"Sites web, WhatsApp, IA et automatisation"}'),
-('services_intro', 'Des systèmes digitaux qui travaillent avec vous', 'AutoFlow Solutions conçoit des sites modernes, des formulaires connectés, des tunnels de devis et des automatisations WhatsApp ou IA pour réduire les tâches répétitives.', '{}'),
+('home_hero', 'AutoFlowSolutions', 'Nous créons des sites professionnels connectés à des automatisations intelligentes pour transformer vos demandes clients en opportunités traitées rapidement.', '{"cta":"Demander un devis","badge":"Sites web, WhatsApp, IA et automatisation"}'),
+('services_intro', 'Des systèmes digitaux qui travaillent avec vous', 'AutoFlowSolutions conçoit des sites modernes, des formulaires connectés, des tunnels de devis et des automatisations WhatsApp ou IA pour réduire les tâches répétitives.', '{}'),
 ('automation_intro', 'Automatiser sans perdre la relation humaine', 'Un client envoie une demande, le système collecte les informations, répond automatiquement, prépare un devis et alerte votre équipe au bon moment.', '{}'),
 ('contact_intro', 'Parlez-nous de votre projet', 'Décrivez votre besoin et nous vous répondrons avec une recommandation claire, adaptée à votre activité.', '{}')
 on conflict (id) do nothing;
@@ -124,8 +124,11 @@ insert into public.articles (id, title, slug, excerpt, content, published) value
 on conflict (id) do nothing;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('media', 'media', true, 5242880, array['image/png','image/jpeg','image/webp','image/gif'])
-on conflict (id) do nothing;
+values ('media', 'media', true, 52428800, array['image/png','image/jpeg','image/webp','image/gif','video/mp4','video/webm','video/quicktime'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 drop policy if exists "Public can read media bucket" on storage.objects;
 create policy "Public can read media bucket" on storage.objects for select using (bucket_id = 'media');

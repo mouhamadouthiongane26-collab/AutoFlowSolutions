@@ -8,7 +8,7 @@ import {
   deleteMedia,
   deleteOffer,
   signOut,
-  uploadImage,
+  uploadMedia,
   upsertArticle,
   upsertOffer,
   upsertSection
@@ -70,7 +70,7 @@ export function AdminDashboard({ sections, offers, articles, media, messages, us
           {active === "overview" ? <Overview sections={sections} offers={offers} articles={articles} media={media} messages={messages} /> : null}
           {active === "texts" ? <TextsPanel sections={sections} /> : null}
           {active === "offers" ? <OffersPanel offers={offers} /> : null}
-          {active === "articles" ? <ArticlesPanel articles={articles} /> : null}
+          {active === "articles" ? <ArticlesPanel articles={articles} media={media} /> : null}
           {active === "media" ? <MediaPanel media={media} /> : null}
           {active === "messages" ? <MessagesPanel messages={messages} /> : null}
         </section>
@@ -190,16 +190,20 @@ function OfferForm({ offer }: { offer?: Offer }) {
   );
 }
 
-function ArticlesPanel({ articles }: { articles: Article[] }) {
+function ArticlesPanel({ articles, media }: { articles: Article[]; media: MediaItem[] }) {
+  const images = media.filter((item) => item.type === "image");
+
   return (
     <div className="grid gap-5">
-      <ArticleForm />
-      {articles.map((article) => <ArticleForm key={article.id} article={article} />)}
+      <ArticleForm images={images} />
+      {articles.map((article) => <ArticleForm key={article.id} article={article} images={images} />)}
     </div>
   );
 }
 
-function ArticleForm({ article }: { article?: Article }) {
+function ArticleForm({ article, images }: { article?: Article; images: MediaItem[] }) {
+  const imageListId = `article-images-${article?.id ?? "new"}`;
+
   return (
     <>
     <form action={upsertArticle} className="admin-panel grid gap-4">
@@ -223,8 +227,13 @@ function ArticleForm({ article }: { article?: Article }) {
         <textarea className="field min-h-44" name="content" defaultValue={article?.content ?? ""} />
       </label>
       <label className="grid gap-2">
-        <span className="label">URL image</span>
-        <input className="field" name="image_url" defaultValue={article?.image_url ?? ""} />
+        <span className="label">Image de l’article</span>
+        <input className="field" name="image_url" defaultValue={article?.image_url ?? ""} list={imageListId} placeholder="URL de l’image ou image uploadée" />
+        {images.length ? (
+          <datalist id={imageListId}>
+            {images.map((image) => <option key={image.id} value={image.url}>{image.title}</option>)}
+          </datalist>
+        ) : null}
       </label>
       <label className="flex items-center gap-3 text-sm font-semibold">
         <input name="published" type="checkbox" defaultChecked={article?.published ?? true} />
@@ -248,10 +257,10 @@ function MediaPanel({ media }: { media: MediaItem[] }) {
   return (
     <div className="grid gap-5">
       <div className="grid gap-5 md:grid-cols-2">
-        <form action={uploadImage} className="admin-panel grid gap-4">
-          <h2 className="flex items-center gap-2 text-xl font-bold"><Image size={20} /> Ajouter une image</h2>
-          <input className="field" name="title" placeholder="Titre de l’image" />
-          <input className="field" name="file" type="file" accept="image/*" required />
+        <form action={uploadMedia} className="admin-panel grid gap-4">
+          <h2 className="flex items-center gap-2 text-xl font-bold"><Image size={20} /> Ajouter une photo ou une vidéo</h2>
+          <input className="field" name="title" placeholder="Titre du média" />
+          <input className="field" name="file" type="file" accept="image/*,video/mp4,video/webm,video/quicktime" required />
           <button className="button" type="submit">Uploader</button>
         </form>
         <form action={addVideo} className="admin-panel grid gap-4">
@@ -266,7 +275,11 @@ function MediaPanel({ media }: { media: MediaItem[] }) {
           <div key={item.id} className="admin-panel">
             <p className="text-sm font-bold uppercase tracking-wider text-brand">{item.type}</p>
             <h3 className="mt-2 font-bold">{item.title}</h3>
-            {item.type === "image" ? <img src={item.url} alt={item.title} className="mt-4 h-48 w-full rounded-lg object-cover" /> : <p className="mt-4 break-all text-sm text-slatecopy">{item.url}</p>}
+            {item.type === "image" ? (
+              <img src={item.url} alt={item.title} className="mt-4 h-48 w-full rounded-lg object-cover" />
+            ) : (
+              <VideoPreview title={item.title} url={item.url} />
+            )}
             <form action={deleteMedia} className="mt-4">
               <input type="hidden" name="id" value={item.id} />
               <button className="button-secondary" type="submit">Supprimer</button>
@@ -275,6 +288,16 @@ function MediaPanel({ media }: { media: MediaItem[] }) {
         ))}
       </div>
     </div>
+  );
+}
+
+function VideoPreview({ title, url }: { title: string; url: string }) {
+  const isFile = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+
+  return isFile ? (
+    <video src={url} title={title} className="mt-4 h-48 w-full rounded-lg bg-black object-cover" controls playsInline preload="metadata" />
+  ) : (
+    <p className="mt-4 break-all text-sm text-slatecopy">{url}</p>
   );
 }
 
