@@ -211,7 +211,7 @@ from (
     ('home.hero.texte', 'Nous créons des sites professionnels connectés à des automatisations intelligentes pour transformer vos demandes clients en opportunités traitées rapidement.'),
     ('services.intro.titre', 'Des systèmes digitaux qui travaillent avec vous'),
     ('services.intro.texte', 'AutoFlowSolutions conçoit des sites modernes, des formulaires connectés, des tunnels de devis et des automatisations WhatsApp ou IA pour réduire les tâches répétitives.'),
-    ('services.items', '[{"titre":"Création de site","texte":"Site vitrine ou plateforme complète, responsive, rapide et modifiable depuis un dashboard."},{"titre":"Automatisation WhatsApp","texte":"Réponses automatiques, collecte d’informations, alertes et suivi des prospects."},{"titre":"Devis automatique","texte":"Qualification des besoins et génération de demandes structurées pour gagner du temps."},{"titre":"Intégrations IA et n8n","texte":"Workflows évolutifs pour connecter formulaires, CRM, emails, WhatsApp et agents IA."}]'),
+    ('services.items', '[{"titre":"Création de site","texte":"Site vitrine ou plateforme complète, responsive, rapide et modifiable depuis un dashboard."},{"titre":"Automatisation","texte":"Solutions intelligentes pour automatiser vos tâches, connecter vos outils et améliorer la gestion de votre activité."},{"titre":"Prise de rendez-vous automatisée","texte":"Systèmes intelligents permettant aux clients de réserver automatiquement un rendez-vous, recevoir des confirmations et centraliser les demandes sans intervention manuelle."},{"titre":"Génération automatique de devis & documents","texte":"Création automatique de devis, PDF, formulaires et documents professionnels à partir des informations clients."}]'),
     ('automation.intro.titre', 'Automatiser sans perdre la relation humaine'),
     ('automation.intro.texte', 'Un client envoie une demande, le système collecte les informations, répond automatiquement, prépare un devis et alerte votre équipe au bon moment.'),
     ('home.automation.points', '["Orchestration, données et réponses reliées en temps réel","Formulaires, CRM et notifications connectés","Réponses client rapides avec contrôle humain"]'),
@@ -221,8 +221,8 @@ from (
     ('contact.note.titre', 'Ce formulaire est connecté à Tally.'),
     ('contact.note.texte', 'Les demandes sont envoyées via votre formulaire de qualification.'),
     ('contact.form.url', 'https://tally.so/embed/zxWgaM?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1'),
-    ('offres.page.titre', 'Choisissez le niveau d’accompagnement adapté'),
-    ('offres.page.texte', 'Chaque pack peut évoluer avec vos besoins : site administrable, contenus dynamiques, automatisation, WhatsApp, IA et génération de devis.'),
+    ('offres.page.titre', 'Des solutions pensées pour automatiser et développer votre activité'),
+    ('offres.page.texte', 'Des systèmes modernes combinant automatisation, intelligence artificielle, création de site et intégrations intelligentes pour simplifier votre organisation et accélérer votre croissance.'),
     ('home.offres.titre', 'Des packs clairs, évolutifs'),
     ('home.medias.titre', 'Photos et vidéos ajoutées depuis l’admin'),
     ('stats.items', '[{"valeur":"24/7","label":"réponse automatique"},{"valeur":"-40%","label":"temps administratif"},{"valeur":"100%","label":"contenu administrable"}]'),
@@ -235,9 +235,9 @@ insert into public.offres (titre, prix, description)
 select *
 from (
   values
-    ('Pack Starter', '690 EUR', 'L’essentiel pour lancer une présence professionnelle et convertir les premiers prospects.'),
-    ('Pack Business', '1 490 EUR', 'Un site complet avec gestion de contenu et automatisations pour gagner du temps.'),
-    ('Pack Premium', 'Sur devis', 'Une plateforme sur mesure avec agent IA, workflows avancés et intégrations métier.')
+    ('Pack Starter', 'À partir de 490 €', 'L’essentiel pour lancer une présence professionnelle moderne avec des premiers outils automatisés.'),
+    ('Pack Business Automation', 'À partir de 990 €', 'Une solution complète pour automatiser vos échanges, centraliser vos demandes et gagner un temps considérable.'),
+    ('Pack Premium IA', 'Sur devis personnalisé', 'Une infrastructure digitale intelligente conçue pour automatiser votre activité et accélérer votre croissance.')
 ) as seed(titre, prix, description)
 where not exists (select 1 from public.offres);
 

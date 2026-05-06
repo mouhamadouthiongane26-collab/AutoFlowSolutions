@@ -119,6 +119,57 @@ export async function submitContact(formData: FormData) {
   redirect("/contact?sent=1");
 }
 
+export async function submitPackLead(formData: FormData) {
+  const supabase = createSupabasePublicClient();
+  const redirectTo = value(formData, "redirect_to") || "/offres";
+
+  if (!supabase) {
+    redirect(`${redirectTo}?error=${encodeURIComponent("Configuration Supabase manquante sur le serveur.")}#lead-form`);
+  }
+
+  const pack = value(formData, "pack");
+  const name = value(formData, "name") || value(formData, "full_name");
+  const email = value(formData, "email");
+
+  if (!name || !email) {
+    redirect(`${redirectTo}?error=${encodeURIComponent("Nom et email obligatoires.")}#lead-form`);
+  }
+
+  const message = [
+    `Pack: ${pack}`,
+    `Nom: ${name}`,
+    `Entreprise: ${value(formData, "company")}`,
+    `Activite: ${value(formData, "activity")}`,
+    `Email: ${email}`,
+    `Telephone: ${value(formData, "phone")}`,
+    `Budget: ${value(formData, "budget")}`,
+    `Type de besoin: ${value(formData, "need_type")}`,
+    `Site internet: ${value(formData, "website_need")}`,
+    `Automatisation: ${value(formData, "automation_need")}`,
+    `WhatsApp: ${value(formData, "whatsapp_need")}`,
+    `Taille entreprise: ${value(formData, "company_size")}`,
+    `Besoins principaux: ${value(formData, "main_needs")}`,
+    `Automatisations souhaitees: ${value(formData, "desired_automations")}`,
+    `IA: ${value(formData, "ai_need")}`,
+    `CRM: ${value(formData, "crm_need")}`,
+    `Nombre utilisateurs: ${value(formData, "users_count")}`,
+    `Description: ${value(formData, "project_description") || value(formData, "detailed_description")}`,
+    "",
+    "Automatisations prevues: email, stockage base de donnees, Google Sheets, n8n, notification WhatsApp."
+  ]
+    .filter((line) => !line.endsWith(": "))
+    .join("\n");
+
+  const { error } = await supabase.from("messages").insert({
+    nom: name,
+    email,
+    message
+  });
+
+  if (error) redirect(`${redirectTo}?error=${encodeURIComponent(error.message)}#lead-form`);
+  redirect(`${redirectTo}?sent=1#lead-form`);
+}
+
 export async function upsertText(formData: FormData) {
   const supabase = await requireContentRole();
   const id = value(formData, "id");
