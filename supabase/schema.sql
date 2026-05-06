@@ -49,6 +49,12 @@ create table if not exists public.messages (
   id uuid primary key default gen_random_uuid(),
   nom text not null,
   email text not null,
+  telephone text,
+  entreprise text,
+  budget text,
+  besoin text,
+  source text not null default 'Site Web',
+  statut text not null default 'Nouveau',
   message text not null,
   created_at timestamptz not null default now()
 );
@@ -59,6 +65,15 @@ alter table public.textes add column if not exists contenu text;
 alter table public.articles add column if not exists titre text;
 alter table public.articles add column if not exists contenu text;
 alter table public.articles add column if not exists image_url text;
+alter table public.messages add column if not exists telephone text;
+alter table public.messages add column if not exists entreprise text;
+alter table public.messages add column if not exists budget text;
+alter table public.messages add column if not exists besoin text;
+alter table public.messages add column if not exists source text not null default 'Site Web';
+alter table public.messages add column if not exists statut text not null default 'Nouveau';
+create index if not exists messages_created_at_idx on public.messages (created_at desc);
+create index if not exists messages_source_idx on public.messages (source);
+create index if not exists messages_statut_idx on public.messages (statut);
 
 do $$
 begin

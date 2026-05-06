@@ -779,6 +779,345 @@ select {
   pointer-events: none;
 }
 
+.contact-info-card,
+.whatsapp-business-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(6, 182, 212, 0.12), transparent 14rem),
+    rgba(255, 255, 255, 0.055);
+  color: #ffffff;
+  font-weight: 800;
+  line-height: 1.4;
+  padding: 1rem;
+  box-shadow: 0 18px 54px rgba(37, 99, 235, 0.14);
+  backdrop-filter: blur(20px);
+  transition:
+    border-color 300ms ease,
+    background 300ms ease,
+    box-shadow 300ms ease,
+    color 300ms ease,
+    transform 300ms ease;
+}
+
+.contact-info-card svg,
+.whatsapp-business-button svg {
+  flex-shrink: 0;
+  color: #06b6d4;
+  filter: drop-shadow(0 0 16px rgba(6, 182, 212, 0.36));
+}
+
+.contact-info-card:hover,
+.whatsapp-business-button:hover {
+  border-color: rgba(6, 182, 212, 0.42);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(6, 182, 212, 0.18), transparent 14rem),
+    rgba(255, 255, 255, 0.075);
+  color: #06b6d4;
+  box-shadow:
+    0 24px 70px rgba(37, 99, 235, 0.2),
+    0 0 34px rgba(6, 182, 212, 0.12);
+  transform: translateY(-0.18rem);
+}
+
+.whatsapp-business-button {
+  background:
+    radial-gradient(circle at 14% 0%, rgba(6, 182, 212, 0.22), transparent 16rem),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.32), rgba(124, 58, 237, 0.18)),
+    rgba(255, 255, 255, 0.065);
+}
+
+.admin-demand-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-demand-actions,
+.admin-demand-filters,
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-demand-actions {
+  justify-content: flex-end;
+}
+
+.admin-demand-filters {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1fr) repeat(3, minmax(10rem, 0.36fr));
+}
+
+.admin-search-field {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  padding: 0 1rem;
+  transition:
+    border-color 300ms ease,
+    background 300ms ease,
+    box-shadow 300ms ease;
+}
+
+.admin-search-field:focus-within {
+  border-color: rgba(6, 182, 212, 0.7);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.15);
+}
+
+.admin-search-field input {
+  min-height: 3rem;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  outline: 0;
+}
+
+.admin-table-shell {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(6, 182, 212, 0.1), transparent 18rem),
+    rgba(255, 255, 255, 0.045);
+  box-shadow: 0 24px 80px rgba(37, 99, 235, 0.16);
+}
+
+.admin-demand-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-demand-table th,
+.admin-demand-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-demand-table th {
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.admin-demand-table td {
+  color: #cbd5e1;
+  font-size: 0.88rem;
+}
+
+.admin-demand-table td strong,
+.admin-demand-table td span {
+  display: block;
+}
+
+.admin-demand-table td strong {
+  color: #ffffff;
+}
+
+.admin-demand-table td p {
+  margin-top: 0.35rem;
+  max-width: 28rem;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid rgba(6, 182, 212, 0.26);
+  border-radius: 999px;
+  background: rgba(6, 182, 212, 0.1);
+  color: #67e8f9;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  padding: 0.38rem 0.62rem;
+  white-space: nowrap;
+}
+
+.admin-badge-whatsapp,
+.admin-badge-new {
+  border-color: rgba(6, 182, 212, 0.32);
+  background: rgba(6, 182, 212, 0.12);
+  color: #67e8f9;
+}
+
+.admin-badge-email,
+.admin-badge-progress {
+  border-color: rgba(37, 99, 235, 0.34);
+  background: rgba(37, 99, 235, 0.14);
+  color: #bfdbfe;
+}
+
+.admin-badge-telegram,
+.admin-badge-answered {
+  border-color: rgba(124, 58, 237, 0.34);
+  background: rgba(124, 58, 237, 0.14);
+  color: #ddd6fe;
+}
+
+.admin-badge-ai,
+.admin-badge-tally,
+.admin-badge-site,
+.admin-badge-done {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.075);
+  color: #e2e8f0;
+}
+
+.admin-status-form {
+  display: grid;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: 100%;
+}
+
+.admin-status-form select {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.65rem;
+  background: rgba(11, 15, 26, 0.94);
+  color: #ffffff;
+  font-size: 0.78rem;
+  padding: 0.52rem 0.6rem;
+}
+
+.admin-status-form button,
+.admin-edit-details summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: 0.65rem;
+  background: rgba(6, 182, 212, 0.1);
+  color: #67e8f9;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 850;
+  padding: 0.56rem 0.68rem;
+  transition:
+    border-color 300ms ease,
+    background 300ms ease,
+    transform 300ms ease;
+}
+
+.admin-status-form button:hover,
+.admin-edit-details summary:hover {
+  border-color: rgba(6, 182, 212, 0.48);
+  background: rgba(6, 182, 212, 0.16);
+  transform: translateY(-0.08rem);
+}
+
+.admin-edit-details {
+  position: relative;
+}
+
+.admin-edit-details summary {
+  list-style: none;
+}
+
+.admin-edit-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-edit-form {
+  position: absolute;
+  right: 0;
+  z-index: 20;
+  margin-top: 0.75rem;
+  display: grid;
+  width: min(28rem, 82vw);
+  gap: 0.75rem;
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 1rem;
+  background: rgba(11, 15, 26, 0.96);
+  padding: 1rem;
+  box-shadow:
+    0 28px 90px rgba(37, 99, 235, 0.24),
+    0 0 34px rgba(6, 182, 212, 0.12);
+  backdrop-filter: blur(24px);
+}
+
+.admin-demand-card {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(6, 182, 212, 0.12), transparent 16rem),
+    rgba(255, 255, 255, 0.045);
+  box-shadow: 0 22px 70px rgba(37, 99, 235, 0.16);
+  padding: 1rem;
+}
+
+.admin-demand-mobile-list {
+  display: none;
+}
+
+.admin-pagination {
+  justify-content: center;
+}
+
+.admin-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+@media (max-width: 900px) {
+  .admin-demand-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-demand-actions {
+    justify-content: stretch;
+  }
+
+  .admin-demand-actions button,
+  .admin-demand-actions form {
+    width: 100%;
+  }
+
+  .admin-demand-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-table-shell {
+    display: none;
+  }
+
+  .admin-demand-mobile-list {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .contact-info-card,
+  .whatsapp-business-button {
+    align-items: flex-start;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

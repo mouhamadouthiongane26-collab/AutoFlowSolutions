@@ -15,6 +15,7 @@ import { articlePath } from "@/lib/data";
 import type { Article, ContactMessage, MediaItem, Offer, TextItem, UserRole } from "@/lib/defaults";
 import { DashboardTabs } from "./dashboard-tabs";
 import { DeleteButton } from "./delete-button";
+import { MessagesCenter } from "./messages-center";
 import { MediaUploadForm } from "./media-upload-form";
 
 type Props = {
@@ -54,7 +55,7 @@ export function AdminDashboard({ texts, offers, articles, media, messages, userE
         offers={<OffersPanel offers={offers} />}
         articles={<ArticlesPanel articles={articles} />}
         media={<MediaPanel media={media} />}
-        messages={<MessagesPanel messages={messages} />}
+        messages={<MessagesCenter messages={messages} />}
       />
     </div>
   );

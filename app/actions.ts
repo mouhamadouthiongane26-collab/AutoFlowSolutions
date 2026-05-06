@@ -6,6 +6,7 @@ import { createSupabaseClient } from "../lib/supabase/server";
 import type { UserRole } from "@/lib/defaults";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { createSupabasePublicClient } from "@/lib/supabase";
+import { contactToSheetLead, syncLeadsToGoogleSheets } from "@/lib/google-sheets";
 
 const publicPaths = ["/", "/services", "/offres", "/automatisation", "/contact"];
 const maxActionUploadSize = 50 * 1024 * 1024;
@@ -70,6 +71,10 @@ function failFromError(error: { code?: string; message: string }, tableName: str
   dashboardMessage("error", isMissingSchemaTable(error) ? tableSetupError(tableName) : error.message, tab);
 }
 
+function isMissingMessageColumn(error: { code?: string; message?: string }) {
+  return error.code === "PGRST204" || error.message?.includes("schema cache") || error.message?.includes("Could not find");
+}
+
 export async function signIn(formData: FormData) {
   const supabase = await requireSupabase();
   const { error } = await supabase.auth.signInWithPassword({
@@ -109,13 +114,34 @@ export async function submitContact(formData: FormData) {
     redirect(`/contact?error=${encodeURIComponent("Configuration Supabase manquante sur le serveur.")}`);
   }
 
-  const { error } = await supabase.from("messages").insert({
+  const payload = {
     nom: value(formData, "name") || value(formData, "nom"),
     email: value(formData, "email"),
+    telephone: value(formData, "phone") || null,
+    entreprise: value(formData, "company") || null,
+    budget: value(formData, "budget") || null,
+    besoin: value(formData, "need_type") || "Contact",
+    source: value(formData, "source") || "Site Web",
+    statut: "Nouveau",
     message: value(formData, "message")
-  });
+  };
+
+  let { error } = await supabase.from("messages").insert(payload);
+
+  if (error && isMissingMessageColumn(error)) {
+    const fallback = await supabase.from("messages").insert({
+      nom: payload.nom,
+      email: payload.email,
+      message: payload.message
+    });
+    if (fallback.error) redirect(`/contact?error=${encodeURIComponent(fallback.error.message)}`);
+    error = null;
+  }
 
   if (error) redirect(`/contact?error=${encodeURIComponent(error.message)}`);
+  syncLeadsToGoogleSheets([{ ...payload, created_at: new Date().toISOString() }]).catch((syncError) => {
+    console.error("Google Sheets sync failed", syncError);
+  });
   redirect("/contact?sent=1");
 }
 
@@ -160,13 +186,34 @@ export async function submitPackLead(formData: FormData) {
     .filter((line) => !line.endsWith(": "))
     .join("\n");
 
-  const { error } = await supabase.from("messages").insert({
+  const payload = {
     nom: name,
     email,
+    telephone: value(formData, "phone") || null,
+    entreprise: value(formData, "company") || null,
+    budget: value(formData, "budget") || null,
+    besoin: value(formData, "need_type") || value(formData, "main_needs") || pack,
+    source: value(formData, "source") || "Site Web",
+    statut: "Nouveau",
     message
-  });
+  };
+
+  let { error } = await supabase.from("messages").insert(payload);
+
+  if (error && isMissingMessageColumn(error)) {
+    const fallback = await supabase.from("messages").insert({
+      nom: payload.nom,
+      email: payload.email,
+      message: payload.message
+    });
+    if (fallback.error) redirect(`${redirectTo}?error=${encodeURIComponent(fallback.error.message)}#lead-form`);
+    error = null;
+  }
 
   if (error) redirect(`${redirectTo}?error=${encodeURIComponent(error.message)}#lead-form`);
+  syncLeadsToGoogleSheets([{ ...payload, created_at: new Date().toISOString() }]).catch((syncError) => {
+    console.error("Google Sheets sync failed", syncError);
+  });
   redirect(`${redirectTo}?sent=1#lead-form`);
 }
 
@@ -331,6 +378,12 @@ export async function upsertMessage(formData: FormData) {
   const payload = {
     nom: value(formData, "nom"),
     email: value(formData, "email"),
+    telephone: value(formData, "telephone") || null,
+    entreprise: value(formData, "entreprise") || null,
+    budget: value(formData, "budget") || null,
+    besoin: value(formData, "besoin") || null,
+    source: value(formData, "source") || "Site Web",
+    statut: value(formData, "statut") || "Nouveau",
     message: value(formData, "message")
   };
 
@@ -341,6 +394,35 @@ export async function upsertMessage(formData: FormData) {
   if (error) failFromError(error, "public.messages", "messages");
   revalidatePublicSite();
   dashboardMessage("success", "Modification enregistree.", "messages");
+}
+
+export async function updateMessageStatus(formData: FormData) {
+  const supabase = await requireContentRole();
+  const id = value(formData, "id");
+  const statut = value(formData, "statut") || "Nouveau";
+  const { error } = await supabase.from("messages").update({ statut }).eq("id", id);
+  if (error) failFromError(error, "public.messages", "messages");
+  revalidatePath("/admin/dashboard");
+  dashboardMessage("success", "Statut mis a jour.", "messages");
+}
+
+export async function syncMessagesToGoogleSheets(formData?: FormData) {
+  const supabase = await requireContentRole();
+  const ids = value(formData ?? new FormData(), "ids")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const query = supabase.from("messages").select("*").order("created_at", { ascending: false });
+  const { data, error } = ids.length > 0 ? await query.in("id", ids) : await query;
+  if (error) failFromError(error, "public.messages", "messages");
+
+  try {
+    const result = await syncLeadsToGoogleSheets((data ?? []).map(contactToSheetLead));
+    dashboardMessage("success", result.message, "messages");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Synchronisation Google Sheets impossible.";
+    dashboardMessage("error", message, "messages");
+  }
 }
 
 export async function deleteMessage(formData: FormData) {

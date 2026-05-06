@@ -36,6 +36,12 @@ export type ContactMessage = {
   nom: string;
   email: string;
   message: string;
+  telephone?: string | null;
+  entreprise?: string | null;
+  budget?: string | null;
+  besoin?: string | null;
+  source?: string | null;
+  statut?: "Nouveau" | "En cours" | "Répondu" | "Terminé" | string | null;
   created_at: string;
 };
 
