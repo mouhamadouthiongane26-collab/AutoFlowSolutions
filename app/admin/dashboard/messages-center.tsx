@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ArrowDownUp, Download, Edit3, FileSpreadsheet, Search } from "lucide-react";
-import { deleteMessage, syncMessagesToGoogleSheets, updateMessageStatus, upsertMessage } from "@/app/actions";
+import { deleteMessage, updateMessageStatus, upsertMessage } from "@/app/actions";
 import type { ContactMessage } from "@/lib/defaults";
 import { DeleteButton } from "./delete-button";
 
@@ -16,6 +16,29 @@ function clean(value?: string | null) {
 
 function csvEscape(value?: string | null) {
   return `"${String(value ?? "").replace(/"/g, '""')}"`;
+}
+
+function htmlEscape(value?: string | null) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function exportRows(messages: ContactMessage[]) {
+  return messages.map((message) => [
+    message.nom,
+    message.email,
+    message.telephone,
+    message.entreprise,
+    message.budget,
+    message.besoin,
+    message.message,
+    message.source ?? "Site Web",
+    message.statut ?? "Nouveau",
+    message.created_at ? new Date(message.created_at).toLocaleString("fr-FR") : ""
+  ]);
 }
 
 function sourceClass(source?: string | null) {
@@ -38,24 +61,45 @@ function statusClass(status?: string | null) {
 
 function exportCsv(messages: ContactMessage[]) {
   const headers = ["nom", "email", "téléphone", "entreprise", "budget", "besoin", "message", "source", "statut", "date"];
-  const rows = messages.map((message) => [
-    message.nom,
-    message.email,
-    message.telephone,
-    message.entreprise,
-    message.budget,
-    message.besoin,
-    message.message,
-    message.source ?? "Site Web",
-    message.statut ?? "Nouveau",
-    message.created_at ? new Date(message.created_at).toLocaleString("fr-FR") : ""
-  ]);
+  const rows = exportRows(messages);
   const csv = [headers, ...rows].map((row) => row.map(csvEscape).join(";")).join("\n");
   const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = `demandes-autoflow-${new Date().toISOString().slice(0, 10)}.csv`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportExcel(messages: ContactMessage[]) {
+  const headers = ["Nom", "Email", "Téléphone", "Entreprise", "Budget", "Besoin", "Message", "Source", "Statut", "Date"];
+  const headerCells = headers.map((header) => `<th>${htmlEscape(header)}</th>`).join("");
+  const bodyRows = exportRows(messages)
+    .map((row) => `<tr>${row.map((cell) => `<td>${htmlEscape(cell)}</td>`).join("")}</tr>`)
+    .join("");
+  const workbook = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      table { border-collapse: collapse; font-family: Arial, sans-serif; }
+      th { background: #0b0f1a; color: #ffffff; font-weight: 700; }
+      th, td { border: 1px solid #cbd5e1; padding: 8px; vertical-align: top; }
+    </style>
+  </head>
+  <body>
+    <table>
+      <thead><tr>${headerCells}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table>
+  </body>
+</html>`;
+  const blob = new Blob([`\uFEFF${workbook}`], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `demandes-autoflow-${new Date().toISOString().slice(0, 10)}.xls`;
   anchor.click();
   URL.revokeObjectURL(url);
 }
@@ -100,7 +144,6 @@ export function MessagesCenter({ messages }: { messages: ContactMessage[] }) {
   const totalPages = Math.max(1, Math.ceil(filteredMessages.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const visibleMessages = filteredMessages.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-  const filteredIds = filteredMessages.map((message) => message.id).join(",");
 
   return (
     <div className="grid gap-5">
@@ -116,12 +159,9 @@ export function MessagesCenter({ messages }: { messages: ContactMessage[] }) {
           <button className="button-secondary" type="button" onClick={() => exportCsv(filteredMessages)}>
             <Download size={18} /> Export CSV
           </button>
-          <form action={syncMessagesToGoogleSheets}>
-            <input type="hidden" name="ids" value={filteredIds} />
-            <button className="button" type="submit">
-              <FileSpreadsheet size={18} /> Export Google Sheets
-            </button>
-          </form>
+          <button className="button" type="button" onClick={() => exportExcel(filteredMessages)}>
+            <FileSpreadsheet size={18} /> Export Excel
+          </button>
         </div>
       </div>
 

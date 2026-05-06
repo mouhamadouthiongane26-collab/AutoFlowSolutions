@@ -6,7 +6,6 @@ import { createSupabaseClient } from "../lib/supabase/server";
 import type { UserRole } from "@/lib/defaults";
 import { getCurrentUser } from "@/lib/supabase/auth";
 import { createSupabasePublicClient } from "@/lib/supabase";
-import { contactToSheetLead, syncLeadsToGoogleSheets } from "@/lib/google-sheets";
 
 const publicPaths = ["/", "/services", "/offres", "/automatisation", "/contact"];
 const maxActionUploadSize = 50 * 1024 * 1024;
@@ -139,9 +138,6 @@ export async function submitContact(formData: FormData) {
   }
 
   if (error) redirect(`/contact?error=${encodeURIComponent(error.message)}`);
-  syncLeadsToGoogleSheets([{ ...payload, created_at: new Date().toISOString() }]).catch((syncError) => {
-    console.error("Google Sheets sync failed", syncError);
-  });
   redirect("/contact?sent=1");
 }
 
@@ -181,7 +177,7 @@ export async function submitPackLead(formData: FormData) {
     `Nombre utilisateurs: ${value(formData, "users_count")}`,
     `Description: ${value(formData, "project_description") || value(formData, "detailed_description")}`,
     "",
-    "Automatisations prevues: email, stockage base de donnees, Google Sheets, n8n, notification WhatsApp."
+    "Automatisations prevues: email, stockage base de donnees, export CSV/Excel et notification WhatsApp."
   ]
     .filter((line) => !line.endsWith(": "))
     .join("\n");
@@ -211,9 +207,6 @@ export async function submitPackLead(formData: FormData) {
   }
 
   if (error) redirect(`${redirectTo}?error=${encodeURIComponent(error.message)}#lead-form`);
-  syncLeadsToGoogleSheets([{ ...payload, created_at: new Date().toISOString() }]).catch((syncError) => {
-    console.error("Google Sheets sync failed", syncError);
-  });
   redirect(`${redirectTo}?sent=1#lead-form`);
 }
 
@@ -404,25 +397,6 @@ export async function updateMessageStatus(formData: FormData) {
   if (error) failFromError(error, "public.messages", "messages");
   revalidatePath("/admin/dashboard");
   dashboardMessage("success", "Statut mis a jour.", "messages");
-}
-
-export async function syncMessagesToGoogleSheets(formData?: FormData) {
-  const supabase = await requireContentRole();
-  const ids = value(formData ?? new FormData(), "ids")
-    .split(",")
-    .map((id) => id.trim())
-    .filter(Boolean);
-  const query = supabase.from("messages").select("*").order("created_at", { ascending: false });
-  const { data, error } = ids.length > 0 ? await query.in("id", ids) : await query;
-  if (error) failFromError(error, "public.messages", "messages");
-
-  try {
-    const result = await syncLeadsToGoogleSheets((data ?? []).map(contactToSheetLead));
-    dashboardMessage("success", result.message, "messages");
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Synchronisation Google Sheets impossible.";
-    dashboardMessage("error", message, "messages");
-  }
 }
 
 export async function deleteMessage(formData: FormData) {
