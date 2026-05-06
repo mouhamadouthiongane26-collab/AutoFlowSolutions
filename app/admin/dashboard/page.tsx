@@ -4,6 +4,7 @@ import { AdminDashboard } from "./admin-dashboard"
 import { getArticles, getMedia, getMessages, getOffers, getTexts } from "@/lib/data"
 import type { UserRole } from "@/lib/defaults"
 import { signOut } from "@/app/actions"
+import { getCurrentUser } from "@/lib/supabase/auth"
 
 export default async function DashboardPage({
   searchParams
@@ -14,9 +15,7 @@ export default async function DashboardPage({
   const supabase = await createSupabaseClient()
   if (!supabase) redirect("/admin/login?error=Configuration%20Supabase%20manquante%20sur%20le%20serveur.")
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser()
+  const { user } = await getCurrentUser(supabase)
 
   if (!user) redirect("/admin/login")
 

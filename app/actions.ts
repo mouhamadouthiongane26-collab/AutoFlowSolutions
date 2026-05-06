@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseClient } from "../lib/supabase/server";
 import type { UserRole } from "@/lib/defaults";
+import { getCurrentUser } from "@/lib/supabase/auth";
+import { createSupabasePublicClient } from "@/lib/supabase";
 
 const publicPaths = ["/", "/services", "/offres", "/automatisation", "/contact"];
 const maxActionUploadSize = 50 * 1024 * 1024;
@@ -24,9 +26,7 @@ async function requireSupabase() {
 
 async function getCurrentRole() {
   const supabase = await requireSupabase();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const { user } = await getCurrentUser(supabase);
 
   if (!user) redirect("/admin/login");
 
@@ -104,7 +104,11 @@ export async function signOut() {
 }
 
 export async function submitContact(formData: FormData) {
-  const supabase = await requireSupabase();
+  const supabase = createSupabasePublicClient();
+  if (!supabase) {
+    redirect(`/contact?error=${encodeURIComponent("Configuration Supabase manquante sur le serveur.")}`);
+  }
+
   const { error } = await supabase.from("messages").insert({
     nom: value(formData, "name") || value(formData, "nom"),
     email: value(formData, "email"),

@@ -1,4 +1,6 @@
 import { createSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/auth";
+import { createSupabasePublicClient } from "@/lib/supabase";
 import { defaultArticles, defaultOffers, defaultTextValues, type Article, type ContactMessage, type MediaItem, type Offer, type TextItem, type UserRole } from "./defaults";
 
 export function slugify(input: string) {
@@ -18,9 +20,7 @@ export async function getUserRole(): Promise<UserRole | null> {
   const supabase = await createSupabaseClient();
   if (!supabase) return null;
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const { user } = await getCurrentUser(supabase);
   if (!user) return null;
 
   const { data } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
@@ -28,7 +28,7 @@ export async function getUserRole(): Promise<UserRole | null> {
 }
 
 export async function getTexts(): Promise<TextItem[]> {
-  const supabase = await createSupabaseClient();
+  const supabase = createSupabasePublicClient();
   if (!supabase) return [];
 
   const { data, error } = await supabase.from("textes").select("*").order("titre");
@@ -67,7 +67,7 @@ export function jsonTextValue<T>(texts: Record<string, string>, key: string, fal
 }
 
 export async function getOffers(): Promise<Offer[]> {
-  const supabase = await createSupabaseClient();
+  const supabase = createSupabasePublicClient();
   if (!supabase) return defaultOffers;
 
   const { data, error } = await supabase.from("offres").select("*").order("created_at");
@@ -75,7 +75,7 @@ export async function getOffers(): Promise<Offer[]> {
 }
 
 export async function getArticles(): Promise<Article[]> {
-  const supabase = await createSupabaseClient();
+  const supabase = createSupabasePublicClient();
   if (!supabase) return defaultArticles;
 
   const { data, error } = await supabase.from("articles").select("*").order("created_at", { ascending: false });
@@ -88,7 +88,7 @@ export async function getArticleBySlug(slug: string): Promise<Article | null> {
 }
 
 export async function getMedia(type?: MediaItem["type"]): Promise<MediaItem[]> {
-  const supabase = await createSupabaseClient();
+  const supabase = createSupabasePublicClient();
   if (!supabase) return [];
 
   let query = supabase.from("media").select("*").order("created_at", { ascending: false });

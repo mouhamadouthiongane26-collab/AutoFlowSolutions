@@ -1,11 +1,24 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getCurrentUser } from "@/lib/supabase/auth";
 
 type CookieToSet = {
   name: string;
   value: string;
   options?: Parameters<NextResponse["cookies"]["set"]>[2];
 };
+
+function clearSupabaseAuthCookies(request: NextRequest, response: NextResponse) {
+  request.cookies
+    .getAll()
+    .filter((cookie) => cookie.name.startsWith("sb-"))
+    .forEach((cookie) => {
+      response.cookies.set(cookie.name, "", {
+        maxAge: 0,
+        path: "/"
+      });
+    });
+}
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next({ request });
@@ -28,9 +41,11 @@ export async function middleware(request: NextRequest) {
     }
   });
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  const { user, invalidRefreshToken } = await getCurrentUser(supabase);
+
+  if (invalidRefreshToken) {
+    clearSupabaseAuthCookies(request, response);
+  }
 
   const isAuthPage = request.nextUrl.pathname === "/admin/login" || request.nextUrl.pathname === "/admin/register";
   const isAdminPage = request.nextUrl.pathname.startsWith("/admin") && !isAuthPage;
@@ -39,7 +54,11 @@ export async function middleware(request: NextRequest) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/admin/login";
     redirectUrl.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
+    const redirectResponse = NextResponse.redirect(redirectUrl);
+    if (invalidRefreshToken) {
+      clearSupabaseAuthCookies(request, redirectResponse);
+    }
+    return redirectResponse;
   }
 
   if (isAuthPage && user && !request.nextUrl.searchParams.has("error")) {
