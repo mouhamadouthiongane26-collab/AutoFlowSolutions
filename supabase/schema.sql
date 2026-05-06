@@ -77,6 +77,14 @@ create index if not exists messages_statut_idx on public.messages (statut);
 
 do $$
 begin
+  alter publication supabase_realtime add table public.messages;
+exception
+  when duplicate_object then null;
+  when undefined_object then null;
+end $$;
+
+do $$
+begin
   if exists (
     select 1 from information_schema.columns
     where table_schema = 'public' and table_name = 'textes' and column_name = 'cle'

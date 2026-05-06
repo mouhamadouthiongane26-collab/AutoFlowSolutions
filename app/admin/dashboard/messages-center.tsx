@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowDownUp, Download, Edit3, FileSpreadsheet, Search } from "lucide-react";
 import { deleteMessage, updateMessageStatus, upsertMessage } from "@/app/actions";
 import type { ContactMessage } from "@/lib/defaults";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { DeleteButton } from "./delete-button";
 
 const sources = ["Toutes", "Site Web", "Tally", "WhatsApp", "Email", "Telegram", "Chatbot IA"];
@@ -105,15 +106,83 @@ function exportExcel(messages: ContactMessage[]) {
 }
 
 export function MessagesCenter({ messages }: { messages: ContactMessage[] }) {
+  const [liveMessages, setLiveMessages] = useState<ContactMessage[]>(messages);
   const [query, setQuery] = useState("");
   const [source, setSource] = useState("Toutes");
   const [status, setStatus] = useState("Tous");
   const [sort, setSort] = useState<"newest" | "oldest" | "source" | "status">("newest");
   const [page, setPage] = useState(1);
 
+  useEffect(() => {
+    setLiveMessages(messages);
+  }, [messages]);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) {
+      console.error("[Admin messages] Supabase browser client missing.");
+      return;
+    }
+    const client = supabase;
+
+    let cancelled = false;
+
+    async function refreshMessages() {
+      const { data, error } = await client.from("messages").select("*").order("created_at", { ascending: false });
+      if (error) {
+        console.error("[Admin messages] fetch failed:", error);
+        return;
+      }
+      if (!cancelled) {
+        console.log("[Admin messages] fetched messages:", data?.length ?? 0);
+        setLiveMessages((data ?? []) as ContactMessage[]);
+      }
+    }
+
+    refreshMessages();
+
+    const channel = client
+      .channel("admin-messages-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages" },
+        (payload) => {
+          console.log("[Admin messages] realtime payload:", payload.eventType, payload);
+          setLiveMessages((current) => {
+            if (payload.eventType === "INSERT") {
+              const next = payload.new as ContactMessage;
+              if (current.some((message) => message.id === next.id)) return current;
+              return [next, ...current];
+            }
+
+            if (payload.eventType === "UPDATE") {
+              const next = payload.new as ContactMessage;
+              return current.map((message) => (message.id === next.id ? next : message));
+            }
+
+            if (payload.eventType === "DELETE") {
+              const deleted = payload.old as Partial<ContactMessage>;
+              return current.filter((message) => message.id !== deleted.id);
+            }
+
+            return current;
+          });
+        }
+      )
+      .subscribe((status, error) => {
+        console.log("[Admin messages] realtime status:", status);
+        if (error) console.error("[Admin messages] realtime error:", error);
+      });
+
+    return () => {
+      cancelled = true;
+      client.removeChannel(channel);
+    };
+  }, []);
+
   const filteredMessages = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    const result = messages.filter((message) => {
+    const result = liveMessages.filter((message) => {
       const haystack = [
         message.nom,
         message.email,
@@ -139,7 +208,7 @@ export function MessagesCenter({ messages }: { messages: ContactMessage[] }) {
       if (sort === "status") return clean(a.statut).localeCompare(clean(b.statut), "fr");
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-  }, [messages, query, source, status, sort]);
+  }, [liveMessages, query, source, status, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filteredMessages.length / pageSize));
   const currentPage = Math.min(page, totalPages);

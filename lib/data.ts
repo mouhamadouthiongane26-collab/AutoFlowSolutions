@@ -105,5 +105,16 @@ export async function getMessages(): Promise<ContactMessage[]> {
   if (!supabase) return [];
 
   const { data, error } = await supabase.from("messages").select("*").order("created_at", { ascending: false });
-  return error ? [] : data ?? [];
+  if (error) {
+    console.error("[Admin dashboard] messages fetch failed:", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    });
+    return [];
+  }
+
+  console.log("[Admin dashboard] messages fetched:", data?.length ?? 0);
+  return data ?? [];
 }
